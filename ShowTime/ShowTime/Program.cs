@@ -1,14 +1,20 @@
-﻿using ShowTime.Components;
+﻿using Microsoft.EntityFrameworkCore;
+using ShowTime.Components;
+using ShowTime.DataAccess;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+var connectionString = builder.Configuration.GetConnectionString("ShowTimeContext");
+
+builder.Services.AddDbContext<ShowTimeDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
@@ -16,7 +22,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+   
     app.UseHsts();
 }
 
@@ -27,6 +33,6 @@ app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode();
-    //.AddAdditionalAssemblies(typeof(ShowTime.Client._Imports).Assembly)
+   
 
 app.Run();
