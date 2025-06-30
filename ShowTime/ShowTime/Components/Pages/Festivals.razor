@@ -1,0 +1,33 @@
+﻿@page "/Festivals"
+@using ShowTime.BusinessLogic.Services
+@using ShowTime.DataAccess.Models
+@inject FestivalService FestivalService
+
+<PageTitle>Festivals</PageTitle>
+
+@if (festivals == null)
+{
+    <p>No festivals</p>
+}
+else
+{
+    <ul>
+        @foreach (var festival in festivals)
+        {
+            <li>
+                <strong>@festival.Name</strong>  - @festival.Location 
+                (@festival.StartDate.ToShortDateString() - @festival.EndDate.ToShortDateString())
+                Capacity: @festival.Capacity
+                <img src="@festival.SplashArt" style="width:100%; max-width:400px; height:auto;" />
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    private IEnumerable<Festival>? festivals;
+    protected override async Task OnInitializedAsync()
+    {
+        festivals = await FestivalService.GetAllFestivalsAsync();
+    }
+}

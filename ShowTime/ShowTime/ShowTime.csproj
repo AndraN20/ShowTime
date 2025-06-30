@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ShowTime.BusinessLogic\ShowTime.BusinessLogic.csproj" />
     <ProjectReference Include="..\..\ShowTimeDataAccess\ShowTime.DataAccess.csproj" />
   </ItemGroup>
 
