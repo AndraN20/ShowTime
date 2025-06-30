@@ -1,9 +1,10 @@
-﻿using ShowTime.DataAccess.Models;
+﻿using ShowTime.BusinessLogic.Abstractions;
+using ShowTime.DataAccess.Models;
 using ShowTime.DataAccess.Repositories.Abstractions;
 
 namespace ShowTime.BusinessLogic.Services
 {
-    public class FestivalService
+    public class FestivalService : IFestivalService
     {
         private readonly IFestivalRepository _festivalRepo;
         public FestivalService(IFestivalRepository festivalRepository)
