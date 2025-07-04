@@ -1,0 +1,39 @@
+﻿@page "/Festivals/{Id:int}"
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Festival
+@using ShowTime.BusinessLogic.DTOs.Artist
+@inject IFestivalService FestivalService
+@inject IArtistService ArtistService
+
+<h3>@festival?.Name</h3>
+<p><b>Location:</b> @festival?.Location</p>
+<p><b>Date:</b> @festival?.StartDate.ToShortDateString() - @festival?.EndDate.ToShortDateString()</p>
+<img src="@festival?.SplashArt" alt="Festival" style="max-width: 400px; height: auto;" class="mb-4" />
+
+<h4>Performing Artists</h4>
+@if (!artists.Any())
+{
+    <p>No artists performing at this festival.</p>
+}
+else
+{
+    <ul>
+        @foreach (var artist in artists)
+        {
+            <li>@artist.Name (@artist.Genre)</li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private FestivalGetDto? festival;
+    private IList<ArtistGetDto> artists = new List<ArtistGetDto>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        festival = await FestivalService.GetFestivalByIdAsync(Id);
+        artists = await ArtistService.GetArtistsForFestivalAsync(Id);
+    }
+}

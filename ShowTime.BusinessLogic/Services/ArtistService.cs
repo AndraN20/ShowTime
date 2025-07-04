@@ -1,5 +1,5 @@
 ﻿using ShowTime.BusinessLogic.Abstractions;
-using ShowTime.BusinessLogic.DTOs;
+using ShowTime.BusinessLogic.DTOs.Artist;
 using ShowTime.DataAccess.Models;
 using ShowTime.DataAccess.Repositories.Abstractions;
 
@@ -7,9 +7,9 @@ namespace ShowTime.BusinessLogic.Services
 {
     public class ArtistService : IArtistService
     {
-        private readonly IRepository<Artist> _artistRepo;
+        private readonly IArtistRepository _artistRepo;
 
-        public ArtistService(IRepository<Artist> artistRepo)
+        public ArtistService(IArtistRepository artistRepo)
         {
             _artistRepo = artistRepo;
         }
@@ -58,7 +58,7 @@ namespace ShowTime.BusinessLogic.Services
             }
         }
 
-        public async Task<IEnumerable<ArtistGetDto>> GetAllArtistsAsync()
+        public async Task<IList<ArtistGetDto>> GetAllArtistsAsync()
         {
             try
             {
@@ -71,7 +71,7 @@ namespace ShowTime.BusinessLogic.Services
                     Image = artist.Image
 
                 });
-                return artistDtos;
+                return artistDtos.ToList();
             }
             catch (Exception ex)
             {
@@ -103,7 +103,29 @@ namespace ShowTime.BusinessLogic.Services
             }
         }
 
-        public async Task<ArtistGetDto> UpdateArtistAsync(int id, ArtistUpdateDto artistDto)
+        public async Task<IList<ArtistGetDto>> GetArtistsForFestivalAsync(int id)
+        {
+            try {
+                var artists = await _artistRepo.GetAllByFestivalAsync(id);
+                if (artists == null)
+                {
+                    throw new KeyNotFoundException($"Artists for festival with id {id} not found");
+                }
+                return artists.Select(artist => new ArtistGetDto
+                {
+                    Id = artist.Id,
+                    Name = artist.Name,
+                    Genre = artist.Genre,
+                    Image = artist.Image
+                }).ToList();
+            }
+            catch(Exception ex)
+            {
+                throw new Exception($"Error finding artists for festival with id: {id}", ex);
+            }
+        }
+
+        public async Task<ArtistGetDto> UpdateArtistAsync(int id, ArtistUpdateDto artistUpdateDto)
         {
             try
             {
@@ -112,24 +134,24 @@ namespace ShowTime.BusinessLogic.Services
                 {
                     throw new KeyNotFoundException($"Artist with ID {id} not found.");
                 }
-                artist.Name = artistDto.Name;
-                artist.Genre = artistDto.Genre;
-                artist.Image = artistDto.Image;
+                artist.Name = artistUpdateDto.Name ?? artist.Name;
+                artist.Genre = artistUpdateDto.Genre ?? artist.Genre;
+                artist.Image = artistUpdateDto.Image ?? artist.Image;
                 await _artistRepo.UpdateAsync(artist);
                 return new ArtistGetDto
                 {
                     Name = artist.Name,
-                    Genre = artistDto.Genre,
-                    Image = artistDto.Image
+                    Genre = artist.Genre,
+                    Image = artist.Image
                 };
             }
-            catch (
-            Exception ex)
+            catch (Exception ex)
             {
                 {
                     throw new Exception($"Error updating artist with id: {id}", ex);
                 }
             }
         }
+
     }
 }

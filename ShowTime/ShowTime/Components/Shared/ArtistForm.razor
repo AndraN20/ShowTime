@@ -1,0 +1,64 @@
+﻿@inject IArtistService ArtistService
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs
+@using ShowTime.BusinessLogic.DTOs.Artist
+
+<p>FORMULARUL ARTISTFORM SE VEDE!</p>
+
+
+<EditForm Model="Artist" OnValidSubmit="HandleValidSubmit">
+    <label>Artist Name</label>
+    <InputText @bind-Value="Artist.Name" class="form-control" />
+    <label>Artist Genre</label>
+    <InputText @bind-Value="Artist.Genre" class="form-control" />
+    <label>Artist Image</label>
+    <InputText @bind-Value="Artist.Image" class="form-control" />
+    <button class="btn btn-primary" type="submit">
+        @(ArtistId == null ? "Add Artist" : "Save Changes")
+    </button>
+</EditForm>
+
+@code {
+    [Parameter] public int? ArtistId { get; set; }   
+    [Parameter] public EventCallback<ArtistCreateDto> OnSave { get; set; }
+
+    public ArtistForm()
+    {
+        Console.WriteLine("ARTISTFORM: constructor apelat!");
+    }
+
+    private ArtistCreateDto Artist = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            if (ArtistId.HasValue)
+            {
+                var artist = await ArtistService.GetArtistByIdAsync(ArtistId.Value);
+                Artist = new ArtistCreateDto
+                {
+                    Name = artist.Name,
+                    Genre = artist.Genre,
+                    Image = artist.Image
+                };
+            }
+            else
+            {
+                Artist = new ArtistCreateDto();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Eroare incarcare artist: {ex.Message}");
+        }
+    }
+
+
+    private async Task HandleValidSubmit()
+    {
+        Console.WriteLine("Form submitted");
+        await OnSave.InvokeAsync(Artist);
+    }
+
+}

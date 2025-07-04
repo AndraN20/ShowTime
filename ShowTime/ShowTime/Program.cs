@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ShowTime.BusinessLogic.Abstractions;
 using ShowTime.BusinessLogic.Services;
 using ShowTime.Components;
 using ShowTime.DataAccess;
@@ -13,9 +14,9 @@ var connectionString = builder.Configuration.GetConnectionString("ShowTimeContex
 builder.Services.AddDbContext<ShowTimeDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddScoped<FestivalService>();
-builder.Services.AddScoped<ArtistService>();
-builder.Services.AddScoped<LineupService>();
+builder.Services.AddTransient<ILineupService, LineupService>();
+builder.Services.AddTransient<IArtistService, ArtistService>();
+builder.Services.AddTransient<IFestivalService, FestivalService>();
 
 
 builder.Services.AddTransient<IRepository<Festival>, FestivalRepository>();
@@ -26,7 +27,9 @@ builder.Services.AddTransient<IRepository<Lineup>, LineupRepository>();
 builder.Services.AddTransient<ILineupRepository, LineupRepository>();
 
 builder.Services.AddRazorComponents()
-    .AddInteractiveWebAssemblyComponents();
+.AddInteractiveServerComponents()
+.AddInteractiveWebAssemblyComponents();
+
 
 var app = builder.Build();
 
@@ -46,6 +49,8 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode();
+
 
 app.Run();

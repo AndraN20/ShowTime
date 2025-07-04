@@ -4,8 +4,7 @@ namespace ShowTime.DataAccess.Repositories.Abstractions
 {
     public interface IFestivalRepository : IRepository<Festival>
     {
-        Task<IEnumerable<Artist>> GetArtistsForFestivalAsync(int festivalId);
-
+        Task<IEnumerable<Festival>> GetAllByArtistAsync(int id);
 
     }
 }

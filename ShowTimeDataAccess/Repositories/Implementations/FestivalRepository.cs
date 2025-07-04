@@ -10,18 +10,11 @@ namespace ShowTime.DataAccess.Repositories.Implementations
         {
         }
 
-        public async Task<IEnumerable<Artist>> GetArtistsForFestivalAsync(int festivalId)
+        public async Task<IEnumerable<Festival>> GetAllByArtistAsync(int id)
         {
-            var festival = await _context.Festivals
-                .Include(f => f.Artists)
-                .FirstOrDefaultAsync(f => f.Id == festivalId);
-
-            if (festival == null)
-            {
-                throw new KeyNotFoundException($"Festival with ID {festivalId} not found.");
-            }
-
-            return festival.Artists;
+            return await _context.Festivals
+                .Where(f => f.Lineups.Any(p => p.ArtistId == id))
+                .ToListAsync();
         }
     }
 }

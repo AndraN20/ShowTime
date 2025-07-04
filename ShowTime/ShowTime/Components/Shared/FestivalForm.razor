@@ -1,0 +1,56 @@
+﻿@using ShowTime.BusinessLogic.DTOs.Festival
+@using ShowTime.BusinessLogic.Abstractions
+@inject IFestivalService FestivalService
+
+<EditForm Model="Festival" OnValidSubmit="HandleValidSubmit">
+    <label>Festival Name</label>
+    <InputText @bind-Value="Festival.Name" class="form-control mb-2" />
+
+    <label>Location</label>
+    <InputText @bind-Value="Festival.Location" class="form-control mb-2" />
+
+    <label>Start Date</label>
+    <InputDate @bind-Value="Festival.StartDate" class="form-control mb-2" />
+
+    <label>End Date</label>
+    <InputDate @bind-Value="Festival.EndDate" class="form-control mb-2" />
+
+    <label>Splash Art (URL)</label>
+    <InputText @bind-Value="Festival.SplashArt" class="form-control mb-3" />
+
+    <button class="btn btn-primary" type="submit">
+        @(FestivalId == null ? "Add Festival" : "Save Changes")
+    </button>
+</EditForm>
+
+@code {
+    [Parameter] public int? FestivalId { get; set; }
+    [Parameter] public EventCallback<FestivalCreateDto> OnSave { get; set; }
+
+    private FestivalCreateDto Festival = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (FestivalId.HasValue)
+        {
+            var fest = await FestivalService.GetFestivalByIdAsync(FestivalId.Value);
+            Festival = new FestivalCreateDto
+            {
+                Name = fest.Name,
+                Location = fest.Location,
+                StartDate = fest.StartDate,
+                EndDate = fest.EndDate,
+                SplashArt = fest.SplashArt
+            };
+        }
+        else
+        {
+            Festival = new FestivalCreateDto();
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(Festival);
+    }
+}

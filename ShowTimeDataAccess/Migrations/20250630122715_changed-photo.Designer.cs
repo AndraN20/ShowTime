@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShowTime.DataAccess;
 
@@ -11,9 +12,11 @@ using ShowTime.DataAccess;
 namespace ShowTime.DataAccess.Migrations
 {
     [DbContext(typeof(ShowTimeDbContext))]
-    partial class ShowTimeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250630122715_changed-photo")]
+    partial class changedphoto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,21 +62,21 @@ namespace ShowTime.DataAccess.Migrations
                         {
                             Id = 6,
                             Genre = "Pop/R&B",
-                            Image = "https://s-cache.s3.cloudworks.ro/kissfm/cache/1280/0/0/articole/2024/10/08/whatsapp-image-2024-10-08-at-193121_331c8603d9cdc5309b400d2527adf99a.jpeg",
+                            Image = "https://electriccastle-assets.s3.amazonaws.com/justin_timberlake.png",
                             Name = "Justin Timberlake"
                         },
                         new
                         {
                             Id = 13,
                             Genre = "Etno/Alternative/Hip-Hop",
-                            Image = "https://timisoara2023.eu/images/8HkvQPwMOnusyl155l1FOQJu-EU=/3465/width-1600%7Cformat-webp/6c62437f-d838-42f3-9bee-8084619d1734",
+                            Image = "https://subcarpati.com/img/logo.jpg",
                             Name = "Subcarpați"
                         },
                         new
                         {
                             Id = 12,
                             Genre = "Hip-Hop/Electronic",
-                            Image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8Kgru8ASEuswZMx_U3iE-_T_XQhU_MYGDRQ&s",
+                            Image = "https://codru-festival.com/img/deliricsilentstrike.png",
                             Name = "Deliric x Silent Strike"
                         });
                 });

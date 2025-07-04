@@ -1,33 +1,114 @@
 ﻿@page "/Festivals"
-@using ShowTime.BusinessLogic.Services
-@using ShowTime.DataAccess.Models
-@inject FestivalService FestivalService
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Festival
+@inject IFestivalService FestivalService
+@using ShowTime.Components.Shared
+@rendermode InteractiveServer
 
-<PageTitle>Festivals</PageTitle>
+<h3>Festivals</h3>
 
-@if (festivals == null)
+<button class="btn btn-success mb-3" @onclick="ShowAddForm">
+    <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+</button>
+
+@if (showAddForm)
 {
-    <p>No festivals</p>
+    <FestivalForm OnSave="HandleSaveFestival" />
+}
+
+@if (editFestivalId != null)
+{
+    <FestivalForm FestivalId="@editFestivalId" OnSave="HandleSaveFestival" />
+}
+
+@if (festivals?.Count == 0)
+{
+    <p>No festivals yet.</p>
 }
 else
 {
-    <ul>
+    <div class="row">
         @foreach (var festival in festivals)
         {
-            <li>
-                <strong>@festival.Name</strong>  - @festival.Location 
-                (@festival.StartDate.ToShortDateString() - @festival.EndDate.ToShortDateString())
-                Capacity: @festival.Capacity
-                <img src="@festival.SplashArt" style="width:100%; max-width:400px; height:auto;" />
-            </li>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+                <div class="card h-100 shadow-sm text-center border-light rounded-3">
+                    <a href="@($"/Festivals/{festival.Id}")"
+                       style="text-decoration: none; color: inherit; display: block; height: 100%;">
+                        <div class="d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f0f0f0;">
+                            <img src="@festival.SplashArt"
+                                 alt="@festival.Name"
+                                 class="img-fluid"
+                                 style="max-height: 180px; max-width: 100%; object-fit: contain;" />
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">@festival.Name</h5>
+                            <p class="card-text text-muted">@festival.Location</p>
+                            <p class="card-text">
+                                @festival.StartDate.ToShortDateString() – @festival.EndDate.ToShortDateString()
+                            </p>
+                        </div>
+                    </a>
+                    <button class="btn btn-sm position-absolute top-0 end-0 m-2"
+                            style="background-color: #6c63ff; color: white; border-radius: 5px; padding: 6px 6px;"
+                            @onclick="() => EditFestival(festival.Id)">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                             viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L4.207 15.5H1v-3.207L12.146.146zM11.207 2.5
+                         13.5 4.793 12.793 5.5 10.5 3.207 11.207 2.5zM4 13.5l8-8L13.5 6l-8 8H4v-.5z" />
+                        </svg>
+                    </button>
+
+                </div>
+            </div>
         }
-    </ul>
+    </div>
 }
 
 @code {
-    private IEnumerable<Festival>? festivals;
+    private IList<FestivalGetDto>? festivals = new List<FestivalGetDto>();
+    private bool showAddForm = false;
+    private int? editFestivalId = null;
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadFestivals();
+    }
+
+    private async Task LoadFestivals()
+    {
         festivals = await FestivalService.GetAllFestivalsAsync();
+    }
+
+    private void ShowAddForm()
+    {
+        showAddForm = true;
+        editFestivalId = null;
+    }
+
+    private void EditFestival(int id)
+    {
+        showAddForm = false;
+        editFestivalId = id;
+    }
+
+    private async Task HandleSaveFestival(FestivalCreateDto festival)
+    {
+        if (editFestivalId == null)
+            await FestivalService.CreateFestivalAsync(festival);
+        else
+            await FestivalService.UpdateFestivalAsync(editFestivalId.Value, new FestivalUpdateDto
+            {
+                Name = festival.Name,
+                Location = festival.Location,
+                StartDate = festival.StartDate,
+                EndDate = festival.EndDate,
+                SplashArt = festival.SplashArt
+            });
+
+        showAddForm = false;
+        editFestivalId = null;
+        await LoadFestivals();
+        StateHasChanged();
     }
 }

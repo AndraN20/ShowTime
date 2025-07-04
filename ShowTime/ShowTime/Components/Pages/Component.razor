@@ -1,0 +1,14 @@
+﻿@page "/testclick"
+
+<h1>Test Click Simplu</h1>
+<p>showAddForm: @showAddForm.ToString()</p>
+<button @onclick="ShowAddForm">TEST</button>
+
+@code {
+    private bool showAddForm = false;
+    private void ShowAddForm()
+    {
+        Console.WriteLine("AI DAT CLICK!!");
+        showAddForm = true;
+    }
+}

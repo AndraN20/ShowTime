@@ -1,6 +1,6 @@
-﻿namespace ShowTime.BusinessLogic.DTOs
+﻿namespace ShowTime.BusinessLogic.DTOs.Artist
 {
-    public class ArtistUpdateDto
+    public class ArtistCreateDto
     {
         public string Name { get; set; } = string.Empty;
         public string Image { get; set; } = string.Empty;

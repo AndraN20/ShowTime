@@ -1,0 +1,122 @@
+﻿@page "/Artists"
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs
+@using ShowTime.BusinessLogic.DTOs.Artist
+@inject IArtistService ArtistService
+@using ShowTime.Components.Shared
+@rendermode InteractiveServer
+
+
+<h3>Artists</h3>
+
+<button class="btn btn-success mb-3" @onclick="ShowAddForm">
+    <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+</button>
+
+
+@if (showAddForm)
+{
+    <ArtistForm OnSave="HandleSaveArtist" />
+}
+
+@if (editArtistId != null)
+{
+    <ArtistForm ArtistId="@editArtistId" OnSave="HandleSaveArtist" />
+}
+
+
+@if(artists.Count == 0){
+    <p>No artists yet.</p>
+}
+else
+{
+    <div class="row">
+        @foreach (var artist in artists)
+        {
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+    <div class="card h-100 shadow-sm text-center border-light rounded-3">
+        <a href="@($"/Artists/{artist.Id}")"
+           style="text-decoration: none; color: inherit; display: block; height: 100%;">
+           
+            <div class="d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f0f0f0;">
+                <img src="@artist.Image"
+                     alt="@artist.Name"
+                     class="img-fluid"
+                     style="max-height: 180px; max-width: 100%; object-fit: contain;" />
+            </div>
+
+            <div class="card-body">
+                <h5 class="card-title">@artist.Name</h5>
+                <p class="card-text text-muted">@artist.Genre</p>
+            </div>
+        </a>
+        <button class="btn btn-sm position-absolute top-0 end-0 m-2"
+            style="background-color: #6c63ff; color: white; border-radius: 5px; padding: 6px 6px;"
+                 @onclick="() => EditArtist(artist.Id)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                    viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">
+                  <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L4.207 15.5H1v-3.207L12.146.146zM11.207 2.5 13.5 4.793 12.793 5.5 10.5 3.207 11.207 2.5zM4 13.5l8-8L13.5 6l-8 8H4v-.5z" />
+                  </svg>
+        </button>
+
+    </div>
+</div>
+
+        }
+    </div>
+
+
+}
+
+
+@code {
+    private IList<ArtistGetDto> artists = new List<ArtistGetDto>();
+    private bool showAddForm = false;
+    private int? editArtistId = null;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadArtists();
+    }
+
+    private async Task LoadArtists()
+    {
+        artists = await ArtistService.GetAllArtistsAsync();
+    }
+
+    private void ShowAddForm()
+    {
+        Console.WriteLine("Add form triggered");
+        showAddForm = true;
+        editArtistId = null;
+        StateHasChanged();
+    }
+
+    private void EditArtist(int artistId)
+    {
+        showAddForm = false;
+        editArtistId = artistId;
+        StateHasChanged();
+    }
+
+    private async Task HandleSaveArtist(ArtistCreateDto artist)
+    {
+        Console.WriteLine("Save triggered");
+
+        if (editArtistId == null)
+            await ArtistService.CreateArtistAsync(artist);
+        else
+            await ArtistService.UpdateArtistAsync(editArtistId.Value, new ArtistUpdateDto
+            {
+                Name = artist.Name,
+                Genre = artist.Genre,
+                Image = artist.Image
+            });
+
+        showAddForm = false;
+        editArtistId = null;
+        await LoadArtists();
+        StateHasChanged();
+    }
+
+}
