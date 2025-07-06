@@ -86,7 +86,7 @@ else
 
     private void ShowAddForm()
     {
-        Console.WriteLine("Add form triggered");
+       
         showAddForm = true;
         editArtistId = null;
         StateHasChanged();
@@ -101,8 +101,6 @@ else
 
     private async Task HandleSaveArtist(ArtistCreateDto artist)
     {
-        Console.WriteLine("Save triggered");
-
         if (editArtistId == null)
             await ArtistService.CreateArtistAsync(artist);
         else

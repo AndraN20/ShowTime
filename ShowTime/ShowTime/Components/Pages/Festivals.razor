@@ -7,8 +7,8 @@
 
 <h3>Festivals</h3>
 
-<button class="btn btn-success mb-3" @onclick="ShowAddForm">
-    <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+<button class="btn btn-success mb-3" style="background-color:#0F4D0F" @onclick="ShowAddForm">
+    <i class="bi bi-plus-circle" style="font-size: 1.2rem; background-color: #0F4D0F"></i>
 </button>
 
 @if (showAddForm)
@@ -49,8 +49,9 @@ else
                             </p>
                         </div>
                     </a>
+                    <AuthorizeView Roles="Administrator">
                     <button class="btn btn-sm position-absolute top-0 end-0 m-2"
-                            style="background-color: #6c63ff; color: white; border-radius: 5px; padding: 6px 6px;"
+                            style="background-color: #0F4D0F; color: white; border-radius: 5px; padding: 6px 6px;"
                             @onclick="() => EditFestival(festival.Id)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                              viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">
@@ -58,6 +59,7 @@ else
                          13.5 4.793 12.793 5.5 10.5 3.207 11.207 2.5zM4 13.5l8-8L13.5 6l-8 8H4v-.5z" />
                         </svg>
                     </button>
+                    </AuthorizeView>
 
                 </div>
             </div>

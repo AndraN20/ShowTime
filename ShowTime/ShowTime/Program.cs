@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
 using ShowTime.BusinessLogic.Abstractions;
 using ShowTime.BusinessLogic.Services;
 using ShowTime.Components;
@@ -17,6 +18,7 @@ builder.Services.AddDbContext<ShowTimeDbContext>(options =>
 builder.Services.AddTransient<ILineupService, LineupService>();
 builder.Services.AddTransient<IArtistService, ArtistService>();
 builder.Services.AddTransient<IFestivalService, FestivalService>();
+builder.Services.AddTransient<IUserService, UserService>();
 
 
 builder.Services.AddTransient<IRepository<Festival>, FestivalRepository>();
@@ -25,10 +27,23 @@ builder.Services.AddTransient<IRepository<Artist>, ArtistRepository>();
 builder.Services.AddTransient<IArtistRepository, ArtistRepository>();
 builder.Services.AddTransient<IRepository<Lineup>, LineupRepository>();
 builder.Services.AddTransient<ILineupRepository, LineupRepository>();
+builder.Services.AddTransient<IRepository<User>, BaseRepository<User>>();
+
 
 builder.Services.AddRazorComponents()
 .AddInteractiveServerComponents()
 .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie
+    (options =>
+    {
+        options.Cookie.Name = "auth-token";
+        options.LoginPath = "/login";
+        options.AccessDeniedPath = "/access-denied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
 
 
 var app = builder.Build();

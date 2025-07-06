@@ -3,7 +3,6 @@
 @using ShowTime.BusinessLogic.DTOs
 @using ShowTime.BusinessLogic.DTOs.Artist
 
-<p>FORMULARUL ARTISTFORM SE VEDE!</p>
 
 
 <EditForm Model="Artist" OnValidSubmit="HandleValidSubmit">
@@ -13,7 +12,7 @@
     <InputText @bind-Value="Artist.Genre" class="form-control" />
     <label>Artist Image</label>
     <InputText @bind-Value="Artist.Image" class="form-control" />
-    <button class="btn btn-primary" type="submit">
+    <button class="btn btn-primary" style="background-color: #0F4D0F" type="submit">
         @(ArtistId == null ? "Add Artist" : "Save Changes")
     </button>
 </EditForm>
@@ -21,11 +20,6 @@
 @code {
     [Parameter] public int? ArtistId { get; set; }   
     [Parameter] public EventCallback<ArtistCreateDto> OnSave { get; set; }
-
-    public ArtistForm()
-    {
-        Console.WriteLine("ARTISTFORM: constructor apelat!");
-    }
 
     private ArtistCreateDto Artist = new();
 

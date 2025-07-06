@@ -1,0 +1,50 @@
+﻿@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Auth
+@using ShowTime.BusinessLogic.Services
+@using System.Security.Claims
+@inject IUserService UserService
+@inject NavigationManager navigationManager
+
+<EditForm Model="LoginInfo" OnValidSubmit="Authenticate" FormName="LoginForm">
+    <label>Email</label>
+    <InputText @bind-Value="LoginInfo.Email" class="form-control" />
+    <label>Password</label>
+    <InputText @bind-Value="LoginInfo.Password"
+               class="form-control" />
+    <button class="btn btn-primary" style="background-color: #0F4D0F" type="submit">
+        Login
+    </button>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    private LoginDto LoginInfo { get; set; } = new();
+
+    [CascadingParameter]
+    private HttpContext httpContext { get; set; } = null!;
+
+    private async Task Authenticate()
+    {   try
+        {
+            var response = await UserService.LoginAsync(LoginInfo);
+
+            var claims = new List<Claim>
+            {
+                new (ClaimTypes.Email, LoginInfo.Email),
+                new (ClaimTypes.Role, Enum.GetName(typeof(Role),response.Role) ?? nameof(Role.User))
+            };
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
+
+            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
+
+            navigationManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error logging in",ex);
+        }
+    }
+}
