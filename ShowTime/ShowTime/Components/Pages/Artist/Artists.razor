@@ -1,0 +1,141 @@
+﻿@page "/Artists"
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs
+@using ShowTime.BusinessLogic.DTOs.Artist
+@inject IArtistService ArtistService
+@inject IGenreService GenreService
+@using ShowTime.BusinessLogic.DTOs.Genre
+@using ShowTime.Components.Shared
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+
+<h3>Artists</h3>
+ <AuthorizeView >
+<button class="btn btn-success mb-3" @onclick="ShowAddForm">
+    <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+</button>
+ </AuthorizeView>
+
+@if (showAddForm)
+{
+    <ArtistForm OnSave="HandleSaveArtist" />
+}
+
+@if (editArtistId != null)
+{
+    <ArtistForm ArtistId="@editArtistId" OnSave="HandleSaveArtist" />
+}
+
+
+@if(artists.Count == 0){
+    <p>No artists yet.</p>
+}
+else
+{
+    <div class="mb-3 d-flex align-items-center gap-2">
+        <label class="mb-0">Filter by genre:</label>
+        <select @bind="selectedGenreId" @bind:event="onchange" class="form-select w-auto">
+            <option value="">All Genres</option>
+            @foreach (var g in allGenres)
+            {
+                <option value="@g.Id">@g.Name</option>
+            }
+        </select>
+    </div>
+
+    <QuickGrid TGridItem="ArtistGetDto"
+               Items="FilteredArtists"
+               Table-Classes="table table-hover align-middle table-striped border shadow rounded-3"
+               Sortable="true">
+        <TemplateColumn Title="Image" Context="artist">
+            <a href="@($"/Artists/{artist.Id}")" style="display:inline-block">
+                <img src="@artist.Image"
+                 alt="@artist.Name"
+                 class="img-thumbnail rounded-4 shadow"
+                 style="height: 200px; width:auto; object-fit: cover; background: #f5f5f5;" />
+            </a>
+        </TemplateColumn>
+
+        <PropertyColumn Property="a => a.Name" Sortable="true" Title="Name" />
+        <TemplateColumn Title="Genres" Context="artist">
+            @foreach (var g in artist.Genres)
+            {
+                <span class="badge bg-success bg-opacity-75 me-1">@g.Name</span>
+            }
+        </TemplateColumn>
+<TemplateColumn Title="Actions" Context="artist">
+            <button class="btn btn-sm btn-outline-primary me-2" title="Edit"
+                    @onclick="() => EditArtist(artist.Id)">
+                <i class="bi bi-pencil"></i>
+            </button>
+        </TemplateColumn>
+    </QuickGrid>
+
+}
+
+
+@code {
+    private IList<ArtistGetDto> artists = new List<ArtistGetDto>();
+    private IList<GenreGetDto> allGenres = new List<GenreGetDto>();
+    private bool showAddForm = false;
+    private int? editArtistId = null;
+    private int? selectedGenreId = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadArtists();
+    }
+
+    private async Task LoadArtists()
+    {
+        artists = await ArtistService.GetAllArtistsAsync();
+        allGenres = await GenreService.GetAllGenresAsync();
+    }
+
+    private IQueryable<ArtistGetDto> FilteredArtists => artists
+                .Where(a =>
+           !selectedGenreId.HasValue ||
+           a.Genres.Any(g => g.Id == selectedGenreId.Value)).AsQueryable();
+
+    private void ShowAddForm()
+    {
+       
+        showAddForm = true;
+        editArtistId = null;
+    }
+
+    private void EditArtist(int artistId)
+    {
+        showAddForm = false;
+        editArtistId = artistId;
+    }
+
+    private async Task HandleSaveArtist(ArtistCreateDto artist)
+    {
+        if (editArtistId == null)
+            await ArtistService.CreateArtistAsync(artist);
+        else
+            await ArtistService.UpdateArtistAsync(editArtistId.Value, new ArtistUpdateDto
+            {
+                Name = artist.Name,
+                GenreIds = artist.GenreIds,
+                Image = artist.Image,
+
+            });
+
+        showAddForm = false;
+        editArtistId = null;
+        await LoadArtists();
+    }
+    private async Task DeleteArtist(int artistId)
+    {
+        var confirm = await JS.InvokeAsync<bool>("confirm", $"Delete this artist?");
+        if (!confirm)
+            return;
+
+        await ArtistService.DeleteArtistAsync(artistId);
+        await LoadArtists();
+    }
+
+}

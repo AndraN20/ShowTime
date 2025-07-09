@@ -1,0 +1,66 @@
+﻿.festival-card {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07), 0 1.5px 4px rgba(0,0,0,0.08);
+    background: #fff;
+    transition: box-shadow 0.15s;
+    position: relative;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+}
+
+    .festival-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15), 0 1.5px 4px rgba(0,0,0,0.12);
+        cursor: pointer;
+    }
+
+.festival-image-container {
+    height: 200px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.festival-image {
+    max-height: 180px;
+    max-width: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.festival-edit-btn {
+    background-color: #0F4D0F !important;
+    color: white !important;
+    border-radius: 7px;
+    padding: 5px 7px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.card-text {
+    font-size: 1rem;
+    color: #666;
+}
+
+@media (max-width: 576px) {
+    .festival-card {
+        min-height: 340px;
+    }
+
+    .festival-image-container {
+        height: 150px;
+    }
+}

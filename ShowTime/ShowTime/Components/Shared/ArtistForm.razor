@@ -1,30 +1,89 @@
 ﻿@inject IArtistService ArtistService
+@inject IGenreService GenreService
 @using ShowTime.BusinessLogic.Abstractions
-@using ShowTime.BusinessLogic.DTOs
 @using ShowTime.BusinessLogic.DTOs.Artist
-
-
+@using ShowTime.BusinessLogic.DTOs.Genre
+@inject IJSRuntime JS
 
 <EditForm Model="Artist" OnValidSubmit="HandleValidSubmit">
-    <label>Artist Name</label>
-    <InputText @bind-Value="Artist.Name" class="form-control" />
-    <label>Artist Genre</label>
-    <InputText @bind-Value="Artist.Genre" class="form-control" />
-    <label>Artist Image</label>
-    <InputText @bind-Value="Artist.Image" class="form-control" />
-    <button class="btn btn-primary" style="background-color: #0F4D0F" type="submit">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Artist Name</label>
+        <InputText @bind-Value="Artist.Name" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Artist Image URL</label>
+        <InputText @bind-Value="Artist.Image" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Select Genres</label>
+        @foreach (var g in AllGenres)
+        {
+            <div class="form-check d-flex align-items-center">
+                <input type="checkbox"
+                       class="form-check-input"
+                       checked="@IsGenreSelected[g.Id]"
+                       @onchange="e => OnCheckboxChanged(g.Id, (bool)e.Value)" />
+                <label class="form-check-label flex-grow-1 ms-2">@g.Name</label>
+                <button type="button"
+                        class="btn btn-link btn-sm p-0 ms-2"
+                        title="Delete Genre"
+                        @onclick="() => DeleteGenreAsync(g.Id)"
+                        style="color: #dc3545;">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        }
+    </div>
+
+
+    <div class="mb-3 d-flex gap-2 align-items-start">
+        <div class="flex-grow-1">
+            <label class="form-label">Add New Genre</label>
+            <InputText @bind-Value="newGenreName"
+                       placeholder="New genre name"
+                       class="form-control" />
+        </div>
+        <button type="button"
+                class="btn btn-secondary mt-4"
+                @onclick="AddNewGenreAsync"
+                disabled="@isAddingGenre">
+            @if (isAddingGenre)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Add
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(addGenreError))
+    {
+        <div class="alert alert-danger py-1 px-2 small">@addGenreError</div>
+    }
+
+    <button type="submit" class="btn btn-primary">
         @(ArtistId == null ? "Add Artist" : "Save Changes")
     </button>
 </EditForm>
 
 @code {
-    [Parameter] public int? ArtistId { get; set; }   
+    [Parameter] public int? ArtistId { get; set; }
     [Parameter] public EventCallback<ArtistCreateDto> OnSave { get; set; }
 
-    private ArtistCreateDto Artist = new();
+    private ArtistCreateDto Artist = new ArtistCreateDto();
+    private IList<GenreGetDto> AllGenres = new List<GenreGetDto>();
+    private string? newGenreName;
+    private string? addGenreError;
+    private bool isAddingGenre = false;
+    private Dictionary<int, bool> IsGenreSelected = new Dictionary<int, bool>();
 
     protected override async Task OnParametersSetAsync()
     {
+        AllGenres = await GenreService.GetAllGenresAsync();
+
         try
         {
             if (ArtistId.HasValue)
@@ -33,26 +92,87 @@
                 Artist = new ArtistCreateDto
                 {
                     Name = artist.Name,
-                    Genre = artist.Genre,
-                    Image = artist.Image
+                    Image = artist.Image,
+                    GenreIds = artist.Genres.Select(g => g.Id).ToList(),
                 };
             }
             else
             {
                 Artist = new ArtistCreateDto();
             }
+            IsGenreSelected = AllGenres
+                .ToDictionary(g => g.Id, g => Artist.GenreIds.Contains(g.Id));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Eroare incarcare artist: {ex.Message}");
+            Console.WriteLine($"Error loading artist: {ex.Message}");
+        }
+    }
+
+    private void OnCheckboxChanged(int genreId, bool isChecked)
+    {
+        IsGenreSelected[genreId] = isChecked;
+        if (isChecked)
+        {
+            if (!Artist.GenreIds.Contains(genreId))
+                Artist.GenreIds.Add(genreId);
+        }
+        else
+        {
+            Artist.GenreIds.Remove(genreId);
+        }
+    }
+
+    private async Task AddNewGenreAsync()
+    {
+        addGenreError = null;
+        if (!string.IsNullOrWhiteSpace(newGenreName))
+        {
+            isAddingGenre = true;
+            try
+            {
+
+                var created = await GenreService.CreateGenreAsync(newGenreName);
+
+                AllGenres.Add(new GenreGetDto { Id = created.Id, Name = created.Name });
+                Artist.GenreIds.Add(created.Id);
+                IsGenreSelected[created.Id] = true;
+                newGenreName = "";
+            }
+            catch (Exception ex)
+            {
+                addGenreError = "Could not add genre: " + ex.Message;
+            }
+            finally
+            {
+                isAddingGenre = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task DeleteGenreAsync(int genreId)
+    {
+        try
+        {
+          
+            if (!await JS.InvokeAsync<bool>("confirm", "Delete this genre?")) return;
+
+            await GenreService.DeleteAsync(genreId); 
+
+            AllGenres.ToList().RemoveAll(g => g.Id == genreId);
+            Artist.GenreIds.Remove(genreId);
+            IsGenreSelected.Remove(genreId);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            addGenreError = "Could not delete genre: " + ex.Message;
         }
     }
 
 
-    private async Task HandleValidSubmit()
-    {
-        Console.WriteLine("Form submitted");
-        await OnSave.InvokeAsync(Artist);
-    }
-
+    private Task HandleValidSubmit()
+        => OnSave.InvokeAsync(Artist);
 }

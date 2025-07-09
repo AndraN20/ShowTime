@@ -5,8 +5,8 @@
         public int Id { get; set; }
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
-        public Role Role { get; set; }
-        public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
-        public ICollection<Festival> Festivals { get; set; } = new List<Festival>();
+        public virtual Role Role { get; set; }
+        public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+        public virtual ICollection<Festival> Festivals { get; set; } = new List<Festival>();
     }
 }

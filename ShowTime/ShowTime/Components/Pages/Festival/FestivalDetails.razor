@@ -1,0 +1,157 @@
+﻿@page "/Festivals/{Id:int}"
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Festival
+@using ShowTime.BusinessLogic.DTOs.Lineup
+@using ShowTime.BusinessLogic.DTOs.Booking
+@using ShowTime.BusinessLogic.DTOs.User
+@inject IFestivalService FestivalService
+@inject ILineupService LineupService
+@inject IBookingService BookingService
+@inject IUserService UserService
+@inject AuthenticationStateProvider AuthProvider
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+
+<div class="festival-details-container position-relative">
+    <img src="@festival?.SplashArt" alt="Festival" class="festival-details-image mb-3" />
+    <div class="festival-details-content w-100">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h2 class="festival-details-title mb-0">@festival?.Name</h2>
+            <AuthorizeView Roles="Administrator">
+                <button class="btn festival-delete-btn" title="Delete" @onclick="() => DeleteFestival(festival!.Id)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </AuthorizeView>
+        </div>
+        <div class="festival-details-location"><i class="bi bi-geo-alt me-1"></i>@festival?.Location</div>
+        <div class="festival-details-dates">
+            <i class="bi bi-calendar-event me-1"></i>
+            @festival?.StartDate.ToShortDateString() - @festival?.EndDate.ToShortDateString()
+        </div>
+    </div>
+
+    @if (currentUser != null)
+    {
+        <div class="card p-3 my-4" style="max-width:400px;">
+            <h5>Buy Tickets</h5>
+            <EditForm Model="@bookingModel" OnValidSubmit="BookTickets" FormName="BuyTicketsForm">
+                <div class="mb-2">
+                    <label>Type:</label>
+                    <InputSelect class="form-select" @bind-Value="bookingModel.Type">
+                        <option value="Regular">Regular</option>
+                        <option value="VIP">VIP</option>
+                    </InputSelect>
+                </div>
+                <div class="mb-2">
+                    <label>Quantity:</label>
+                    <InputNumber class="form-control" @bind-Value="bookingModel.Quantity" Min="1" />
+                </div>
+                <button type="submit" class="btn btn-success">Buy</button>
+            </EditForm>
+            @if (!string.IsNullOrEmpty(successMsg))
+            {
+                <div class="alert alert-success mt-2">@successMsg</div>
+            }
+            @if (!string.IsNullOrEmpty(errorMsg))
+            {
+                <div class="alert alert-danger mt-2">@errorMsg</div>
+            }
+        </div>
+    }
+
+    <div class="festival-details-artists w-100">
+        <h4 class="mt-4 mb-3">Performing Artists</h4>
+        @if (lineups.Count == 0)
+        {
+            <p>No artists scheduled yet.</p>
+        }
+        else
+        {
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Artist</th>
+                        <th>Stage</th>
+                        <th>Time</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var lineup in lineups.OrderBy(l => l.StartTime))
+                    {
+                        <tr>
+                            <td>@lineup.ArtistName</td>
+                            <td>@lineup.Stage</td>
+                            <td>@lineup.StartTime.ToString(@"hh\:mm")</td>
+                            <td>
+                                <!-- Poți adăuga aici butoane de edit/delete pentru lineup dacă vrei -->
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private FestivalGetDto? festival;
+    private IList<LineupGetDto> lineups = new List<LineupGetDto>();
+
+    // Booking
+    private BookingCreateDto bookingModel = new() { Type = "Regular", Quantity = 1 };
+    private string? successMsg, errorMsg;
+    private UserGetDto? currentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        festival = await FestivalService.GetFestivalByIdAsync(Id);
+        lineups = await LineupService.GetLineupsForFestivalAsync(Id);
+
+
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var email = authState.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (email != null)
+        {
+            currentUser = await UserService.GetUserByEmailAsync(email);
+            bookingModel.FestivalId = Id;
+            bookingModel.UserId = currentUser.Id;
+        }
+        else
+        {
+            currentUser = null;
+        }
+    }
+
+    private async Task BookTickets()
+    {
+        errorMsg = null;
+        successMsg = null;
+        if (bookingModel.Quantity < 1)
+        {
+            errorMsg = "Quantity must be at least 1.";
+            return;
+        }
+        try
+        {
+            var result = await BookingService.CreateBookingAsync(bookingModel);
+            successMsg = $"Booking successful! Total: {result.Price} RON.";
+        }
+        catch (Exception ex)
+        {
+            errorMsg = ex.Message;
+        }
+    }
+
+    private async Task DeleteFestival(int id)
+    {
+        var confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this festival?");
+        if (!confirm)
+            return;
+
+        await FestivalService.DeleteFestivalAsync(id);
+        Navigation.NavigateTo("/festivals");
+    }
+}

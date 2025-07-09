@@ -10,13 +10,6 @@ namespace ShowTime.DataAccess.Repositories.Implementations
         {
         }
 
-        public async Task<IEnumerable<Lineup>> GetLineupsForArtistAsync(int artistId)
-        {
-            return await _context.Lineups
-                .Where(l => l.ArtistId == artistId)
-                .Include(l => l.Festival)
-                .ToListAsync();
-        }
 
         public async Task<IEnumerable<Lineup>> GetLineupsForFestivalAsync(int festivalId)
         {
@@ -25,5 +18,24 @@ namespace ShowTime.DataAccess.Repositories.Implementations
                 .Include(l => l.Artist)
                 .ToListAsync();
         }
+        public async Task<Lineup?> GetAsync(int festivalId, int artistId)
+        {
+            return await _context.Lineups
+                .FirstOrDefaultAsync(l => l.FestivalId == festivalId && l.ArtistId == artistId);
+        }
+
+        public async Task DeleteAsync(int festivalId, int artistId)
+        {
+            var entity = await _context.Lineups.FindAsync(festivalId, artistId);
+            if (entity == null)
+                throw new KeyNotFoundException("Lineup not found");
+
+            _context.Lineups.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
+
+
+
+
     }
 }

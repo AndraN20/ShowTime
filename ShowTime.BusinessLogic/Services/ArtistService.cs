@@ -1,5 +1,8 @@
-﻿using ShowTime.BusinessLogic.Abstractions;
+﻿using Microsoft.EntityFrameworkCore;
+using ShowTime.BusinessLogic.Abstractions;
 using ShowTime.BusinessLogic.DTOs.Artist;
+using ShowTime.BusinessLogic.DTOs.Genre;
+using ShowTime.DataAccess;
 using ShowTime.DataAccess.Models;
 using ShowTime.DataAccess.Repositories.Abstractions;
 
@@ -8,10 +11,13 @@ namespace ShowTime.BusinessLogic.Services
     public class ArtistService : IArtistService
     {
         private readonly IArtistRepository _artistRepo;
+        private readonly IGenreRepository _genreRepo;
 
-        public ArtistService(IArtistRepository artistRepo)
+        public ArtistService(IArtistRepository artistRepo, IGenreRepository genreRepo)
         {
             _artistRepo = artistRepo;
+            _genreRepo = genreRepo;
+
         }
 
         public async Task<ArtistGetDto> CreateArtistAsync(ArtistCreateDto artistCreateDto)
@@ -21,23 +27,31 @@ namespace ShowTime.BusinessLogic.Services
                 var artist = new Artist
                 {
                     Name = artistCreateDto.Name,
-                    Genre = artistCreateDto.Genre,
                     Image = artistCreateDto.Image
                 };
+                var genres = await _genreRepo.GetByIdsAsync(artistCreateDto.GenreIds);
+                if (genres == null || !genres.Any())
+                {
+                    throw new KeyNotFoundException("No genres found for the provided IDs.");
+                }
+
+                foreach (var g in genres)
+                    artist.Genres.Add(g);
+
                 var createdArtist = await _artistRepo.CreateAsync(artist);
                 return new ArtistGetDto
                 {
                     Id = createdArtist.Id,
                     Name = createdArtist.Name,
-                    Genre = createdArtist.Genre,
-                    Image = createdArtist.Image
+                    Image = createdArtist.Image,
+                    Genres = createdArtist.Genres
+                       .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+                       .ToList()
                 };
-
             }
             catch (Exception ex)
             {
                 throw new Exception("Error adding user.", ex);
-
             }
         }
 
@@ -67,8 +81,10 @@ namespace ShowTime.BusinessLogic.Services
                 {
                     Id = artist.Id,
                     Name = artist.Name,
-                    Genre = artist.Genre,
-                    Image = artist.Image
+                    Image = artist.Image,
+                    Genres = artist.Genres
+                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+                   .ToList()
 
                 });
                 return artistDtos.ToList();
@@ -92,8 +108,10 @@ namespace ShowTime.BusinessLogic.Services
                 {
                     Id = artist.Id,
                     Name = artist.Name,
-                    Genre = artist.Genre,
-                    Image = artist.Image
+                    Image = artist.Image,
+                    Genres = artist.Genres
+                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+                   .ToList()
                 };
             }
             catch (Exception ex)
@@ -105,7 +123,8 @@ namespace ShowTime.BusinessLogic.Services
 
         public async Task<IList<ArtistGetDto>> GetArtistsForFestivalAsync(int id)
         {
-            try {
+            try
+            {
                 var artists = await _artistRepo.GetAllByFestivalAsync(id);
                 if (artists == null)
                 {
@@ -115,11 +134,13 @@ namespace ShowTime.BusinessLogic.Services
                 {
                     Id = artist.Id,
                     Name = artist.Name,
-                    Genre = artist.Genre,
-                    Image = artist.Image
+                    Image = artist.Image,
+                    Genres = artist.Genres
+                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+                   .ToList()
                 }).ToList();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new Exception($"Error finding artists for festival with id: {id}", ex);
             }
@@ -129,27 +150,38 @@ namespace ShowTime.BusinessLogic.Services
         {
             try
             {
-                var artist = await _artistRepo.GetByIdAsync(id);
-                if (artist == null)
-                {
-                    throw new KeyNotFoundException($"Artist with ID {id} not found.");
-                }
+                var artist = await _artistRepo.GetByIdAsync(id)
+          ?? throw new KeyNotFoundException($"Artist with ID {id} not found.");
+
                 artist.Name = artistUpdateDto.Name ?? artist.Name;
-                artist.Genre = artistUpdateDto.Genre ?? artist.Genre;
                 artist.Image = artistUpdateDto.Image ?? artist.Image;
-                await _artistRepo.UpdateAsync(artist);
+
+
+
+                IList<Genre> existingGenres = new List<Genre>();
+                if (artistUpdateDto.GenreIds?.Any() == true)
+                {
+                    existingGenres = await _genreRepo.GetByIdsAsync(artistUpdateDto.GenreIds);
+                }
+                artist.Genres.Clear();
+                foreach (var g in existingGenres)
+                    artist.Genres.Add(g);
+
+                var updated = await _artistRepo.UpdateAsync(artist);
+
                 return new ArtistGetDto
                 {
-                    Name = artist.Name,
-                    Genre = artist.Genre,
-                    Image = artist.Image
+                    Id = updated.Id,
+                    Name = updated.Name,
+                    Image = updated.Image,
+                    Genres = updated.Genres
+                        .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+                        .ToList()
                 };
             }
             catch (Exception ex)
             {
-                {
-                    throw new Exception($"Error updating artist with id: {id}", ex);
-                }
+                throw new Exception($"Error updating artist with id: {id}", ex);
             }
         }
 

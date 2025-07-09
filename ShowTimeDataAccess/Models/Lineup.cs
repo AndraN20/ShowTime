@@ -4,9 +4,9 @@
     {
         public int FestivalId { get; set; }
         public int ArtistId { get; set; }
-        public string Stage {  get; set; } = string.Empty;
+        public string Stage { get; set; } = string.Empty;
         public DateTime StartTime { get; set; }
-        public Festival Festival { get; set; } = null!;
-        public Artist Artist { get; set; } = null!;
+        public virtual Festival Festival { get; set; } = null!;
+        public virtual Artist Artist { get; set; } = null!;
     }
 }

@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using ShowTime.BusinessLogic.Abstractions;
 using ShowTime.BusinessLogic.Services;
@@ -13,21 +15,28 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("ShowTimeContext");
 
 builder.Services.AddDbContext<ShowTimeDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString),ServiceLifetime.Scoped);
+
 
 builder.Services.AddTransient<ILineupService, LineupService>();
-builder.Services.AddTransient<IArtistService, ArtistService>();
+builder.Services.AddScoped<IArtistService, ArtistService>();
 builder.Services.AddTransient<IFestivalService, FestivalService>();
 builder.Services.AddTransient<IUserService, UserService>();
+builder.Services.AddTransient<IGenreService, GenreService>();
+builder.Services.AddTransient<IBookingService, BookingService>();
 
-
-builder.Services.AddTransient<IRepository<Festival>, FestivalRepository>();
-builder.Services.AddTransient<IFestivalRepository, FestivalRepository>();
-builder.Services.AddTransient<IRepository<Artist>, ArtistRepository>();
-builder.Services.AddTransient<IArtistRepository, ArtistRepository>();
-builder.Services.AddTransient<IRepository<Lineup>, LineupRepository>();
-builder.Services.AddTransient<ILineupRepository, LineupRepository>();
-builder.Services.AddTransient<IRepository<User>, BaseRepository<User>>();
+builder.Services.AddScoped<IRepository<Festival>, FestivalRepository>();
+builder.Services.AddScoped<IFestivalRepository, FestivalRepository>();
+builder.Services.AddScoped<IRepository<Artist>, ArtistRepository>();
+builder.Services.AddScoped<IArtistRepository, ArtistRepository>();
+builder.Services.AddScoped<IRepository<Lineup>, LineupRepository>();
+builder.Services.AddScoped<ILineupRepository, LineupRepository>();
+builder.Services.AddScoped<IRepository<User>, BaseRepository<User>>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRepository<Genre>, GenreRepository>();
+builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+builder.Services.AddScoped<IRepository<Booking>, BookingRepository>();
 
 
 builder.Services.AddRazorComponents()
@@ -44,6 +53,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();
@@ -61,11 +71,23 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
+
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode();
+
+app.MapGet("/logout", async (HttpContext context) =>
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    context.Response.Redirect("/");
+});
 
 
 app.Run();

@@ -5,13 +5,14 @@ namespace ShowTime.DataAccess
 {
     public class ShowTimeDbContext : DbContext
     {
-        public ShowTimeDbContext(DbContextOptions options) : base(options)     { }
+        public ShowTimeDbContext(DbContextOptions options) : base(options) { }
 
         public DbSet<Festival> Festivals { get; set; } = null!;
         public DbSet<Artist> Artists { get; set; } = null!;
         public DbSet<Lineup> Lineups { get; set; } = null!;
         public DbSet<Booking> Bookings { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Genre> Genres { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,8 +23,9 @@ namespace ShowTime.DataAccess
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new BookingConfiguration());
             modelBuilder.ApplyConfiguration(new LineupConfiguration());
+            modelBuilder.ApplyConfiguration(new GenreConfiguration());
 
-        
+
         }
     }
 }

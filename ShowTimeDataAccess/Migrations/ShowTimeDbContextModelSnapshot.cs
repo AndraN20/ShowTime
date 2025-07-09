@@ -22,6 +22,48 @@ namespace ShowTime.DataAccess.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ArtistGenre", b =>
+                {
+                    b.Property<int>("ArtistId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ArtistId", "GenreId");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("ArtistGenre");
+
+                    b.HasData(
+                        new
+                        {
+                            ArtistId = 4,
+                            GenreId = 1
+                        },
+                        new
+                        {
+                            ArtistId = 4,
+                            GenreId = 2
+                        },
+                        new
+                        {
+                            ArtistId = 6,
+                            GenreId = 4
+                        },
+                        new
+                        {
+                            ArtistId = 12,
+                            GenreId = 1
+                        },
+                        new
+                        {
+                            ArtistId = 13,
+                            GenreId = 1
+                        });
+                });
+
             modelBuilder.Entity("ShowTime.DataAccess.Models.Artist", b =>
                 {
                     b.Property<int>("Id")
@@ -29,10 +71,6 @@ namespace ShowTime.DataAccess.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Genre")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Image")
                         .IsRequired()
@@ -51,28 +89,24 @@ namespace ShowTime.DataAccess.Migrations
                         new
                         {
                             Id = 4,
-                            Genre = "Hip-Hop/Trap",
                             Image = "https://cdn.adh.reperio.news/image-1/1e800e06-0d90-43aa-b8a2-62abb4e3b4dc/index.jpeg?p=f%3Dpng%26w%3D1400%26r%3Dcontain",
                             Name = "Metro Boomin"
                         },
                         new
                         {
                             Id = 6,
-                            Genre = "Pop/R&B",
                             Image = "https://s-cache.s3.cloudworks.ro/kissfm/cache/1280/0/0/articole/2024/10/08/whatsapp-image-2024-10-08-at-193121_331c8603d9cdc5309b400d2527adf99a.jpeg",
                             Name = "Justin Timberlake"
                         },
                         new
                         {
                             Id = 13,
-                            Genre = "Etno/Alternative/Hip-Hop",
                             Image = "https://timisoara2023.eu/images/8HkvQPwMOnusyl155l1FOQJu-EU=/3465/width-1600%7Cformat-webp/6c62437f-d838-42f3-9bee-8084619d1734",
                             Name = "Subcarpați"
                         },
                         new
                         {
                             Id = 12,
-                            Genre = "Hip-Hop/Electronic",
                             Image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8Kgru8ASEuswZMx_U3iE-_T_XQhU_MYGDRQ&s",
                             Name = "Deliric x Silent Strike"
                         });
@@ -87,6 +121,9 @@ namespace ShowTime.DataAccess.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("Price")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<string>("Type")
@@ -167,6 +204,46 @@ namespace ShowTime.DataAccess.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ShowTime.DataAccess.Models.Genre", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(265)
+                        .HasColumnType("nvarchar(265)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Genres", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Hip-Hop"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Trap"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Rock"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Name = "Pop"
+                        });
+                });
+
             modelBuilder.Entity("ShowTime.DataAccess.Models.Lineup", b =>
                 {
                     b.Property<int>("FestivalId")
@@ -214,6 +291,21 @@ namespace ShowTime.DataAccess.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("ArtistGenre", b =>
+                {
+                    b.HasOne("ShowTime.DataAccess.Models.Artist", null)
+                        .WithMany()
+                        .HasForeignKey("ArtistId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShowTime.DataAccess.Models.Genre", null)
+                        .WithMany()
+                        .HasForeignKey("GenreId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ShowTime.DataAccess.Models.Booking", b =>

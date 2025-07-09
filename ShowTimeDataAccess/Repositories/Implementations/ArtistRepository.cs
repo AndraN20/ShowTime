@@ -15,5 +15,19 @@ namespace ShowTime.DataAccess.Repositories.Implementations
                 .Where(f => f.Lineups.Any(p => p.FestivalId == id))
                 .ToListAsync();
         }
+        public override async Task<IEnumerable<Artist>> GetAllAsync()
+        {
+            return await _context.Artists
+                                 .Include(a => a.Genres)
+                                 .ToListAsync();
+        }
+        public override async Task<Artist?> GetByIdAsync(int id)
+        {
+            return await _context.Artists
+                                 .Include(a => a.Genres)
+                                 .FirstOrDefaultAsync(a => a.Id == id);
+        }
+
+
     }
 }

@@ -3,25 +3,31 @@
 @inject IFestivalService FestivalService
 
 <EditForm Model="Festival" OnValidSubmit="HandleValidSubmit">
-    <label>Festival Name</label>
-    <InputText @bind-Value="Festival.Name" class="form-control mb-2" />
-
-    <label>Location</label>
-    <InputText @bind-Value="Festival.Location" class="form-control mb-2" />
-
-    <label>Start Date</label>
-    <InputDate @bind-Value="Festival.StartDate" class="form-control mb-2" />
-
-    <label>End Date</label>
-    <InputDate @bind-Value="Festival.EndDate" class="form-control mb-2" />
-
-    <label>Splash Art (URL)</label>
-    <InputText @bind-Value="Festival.SplashArt" class="form-control mb-3" />
-
-    <button class="btn btn-primary" style="background-color: #0F4D0F" type="submit">
+    <div class="mb-3">
+        <label class="form-label">Festival Name</label>
+        <InputText @bind-Value="Festival.Name" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Location</label>
+        <InputText @bind-Value="Festival.Location" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Start Date</label>
+        <InputDate @bind-Value="Festival.StartDate" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">End Date</label>
+        <InputDate @bind-Value="Festival.EndDate" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Splash Art (URL)</label>
+        <InputText @bind-Value="Festival.SplashArt" class="form-control" />
+    </div>
+    <button class="btn btn-primary" style="background-color: #0F4D0F; border-color: #0F4D0F;" type="submit">
         @(FestivalId == null ? "Add Festival" : "Save Changes")
     </button>
 </EditForm>
+
 
 @code {
     [Parameter] public int? FestivalId { get; set; }

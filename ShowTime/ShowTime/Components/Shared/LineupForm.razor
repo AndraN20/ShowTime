@@ -1,0 +1,91 @@
+﻿@using ShowTime.BusinessLogic.DTOs.Lineup
+@using ShowTime.BusinessLogic.DTOs.Artist
+@using ShowTime.BusinessLogic.Abstractions
+@inject IArtistService ArtistService
+@inject ILineupService LineupService
+
+<EditForm Model="Lineup" OnValidSubmit="HandleValidSubmit">
+    <div class="mb-2">
+        <label>Artist</label>
+        <InputSelect @bind-Value="Lineup.ArtistId" class="form-control" required>
+            <option value="">Select artist</option>
+            @foreach (var artist in Artists)
+            {
+                <option value="@artist.Id">@artist.Name</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-2">
+        <label>Stage</label>
+        <InputText @bind-Value="Lineup.Stage" class="form-control" required />
+    </div>
+
+   <div class="mb-2">
+    <label>Start Time</label>
+        <label>Date</label>
+        <input type="date" @bind="DatePart" class="form-control" required />
+        
+   </div>
+
+
+    <button class="btn btn-primary me-2" style="background-color: #0F4D0F" type="submit">
+        @(IsEdit ? "Save Changes" : "Add to Lineup")
+    </button>
+    @if (OnCancel.HasDelegate)
+    {
+        <button class="btn btn-secondary" type="button" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+    }
+</EditForm>
+
+@code {
+    [Parameter] public int FestivalId { get; set; }
+    [Parameter] public int? ArtistId { get; set; }
+    [Parameter] public EventCallback<LineupDto> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private LineupDto Lineup = new();
+    private List<ArtistGetDto> Artists = new();
+    private bool IsEdit => ArtistId.HasValue;
+
+    private DateTime DatePart
+    {
+        get => Lineup.StartTime.Date;
+        set => Lineup.StartTime = value.Date.Add(Lineup.StartTime.TimeOfDay);
+    }
+
+    private TimeSpan TimePart
+    {
+        get => Lineup.StartTime.TimeOfDay;
+        set => Lineup.StartTime = Lineup.StartTime.Date.Add(value);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Artists = (await ArtistService.GetAllArtistsAsync()).ToList();
+
+        if (IsEdit && ArtistId.HasValue)
+        {
+            var lineup = await LineupService.GetAsync(FestivalId, ArtistId.Value);
+            if (lineup != null)
+            {
+                Lineup = new LineupDto
+                {
+                    FestivalId = lineup.FestivalId,
+                    ArtistId = lineup.ArtistId,
+                    Stage = lineup.Stage,
+                    StartTime = lineup.StartTime
+                };
+            }
+        }
+        else
+        {
+            Lineup = new LineupDto { FestivalId = FestivalId, StartTime = DateTime.Today };
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(Lineup);
+    }
+}

@@ -1,4 +1,6 @@
-﻿@using Microsoft.AspNetCore.Authentication
+﻿@page "/login"
+@using Microsoft.AspNetCore.Antiforgery
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using ShowTime.BusinessLogic.Abstractions
 @using ShowTime.BusinessLogic.DTOs.Auth
@@ -7,16 +9,37 @@
 @inject IUserService UserService
 @inject NavigationManager navigationManager
 
-<EditForm Model="LoginInfo" OnValidSubmit="Authenticate" FormName="LoginForm">
-    <label>Email</label>
-    <InputText @bind-Value="LoginInfo.Email" class="form-control" />
-    <label>Password</label>
-    <InputText @bind-Value="LoginInfo.Password"
-               class="form-control" />
-    <button class="btn btn-primary" style="background-color: #0F4D0F" type="submit">
-        Login
-    </button>
-</EditForm>
+
+
+<div class="d-flex align-items-center justify-content-center vh-100">
+    <div class="card p-4 shadow" style="min-width:340px; border-radius:20px;">
+        <h2 class="mb-4 text-center">Login</h2>
+        <EditForm Model="LoginInfo" OnValidSubmit="Authenticate" FormName="LoginForm">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label>Email</label>
+                <InputText @bind-Value="LoginInfo.Email" class="form-control" />
+                <ValidationMessage For="@(() => LoginInfo.Email)" />
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <InputText @bind-Value="LoginInfo.Password" class="form-control" type="password" />
+                <ValidationMessage For="@(() => LoginInfo.Password)" />
+            </div>
+            <button class="btn btn-primary w-100" style="background-color: #0F4D0F" type="submit">
+                Login
+            </button>
+        </EditForm>
+        <div class="text-center mt-3">
+            <span>No account?</span>
+            <a href="/register" class="ms-1">Sign up</a>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger mt-3 text-center">@errorMessage</div>
+        }
+    </div>
+</div>
 
 @code {
     [SupplyParameterFromForm]
@@ -25,26 +48,30 @@
     [CascadingParameter]
     private HttpContext httpContext { get; set; } = null!;
 
+    private string errorMessage = "";
+
     private async Task Authenticate()
-    {   try
+    {
+        try
         {
+            errorMessage = "";
             var response = await UserService.LoginAsync(LoginInfo);
 
             var claims = new List<Claim>
             {
                 new (ClaimTypes.Email, LoginInfo.Email),
-                new (ClaimTypes.Role, Enum.GetName(typeof(Role),response.Role) ?? nameof(Role.User))
+                new (ClaimTypes.Role, Enum.GetName(typeof(Role), response.Role) ?? nameof(Role.User))
             };
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
             await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal);
 
-            navigationManager.NavigateTo("/");
+            httpContext.Response.Redirect("/profile");
         }
         catch (Exception ex)
         {
-            throw new Exception("Error logging in",ex);
+            errorMessage = ex.InnerException?.Message ?? ex.Message;
         }
     }
 }
