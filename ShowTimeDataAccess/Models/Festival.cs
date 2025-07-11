@@ -13,6 +13,6 @@
         public virtual ICollection<Artist> Artists { get; set; } = new List<Artist>();
         public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public virtual ICollection<User> Users { get; set; } = new List<User>();
-
+        public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
     }
 }

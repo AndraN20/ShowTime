@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 @using ShowTime.Components.Layout
 
 <NavMenu />
@@ -9,9 +10,16 @@
             <NotAuthorized><a href="/"></a></NotAuthorized>
             <Authorized></Authorized>
         </AuthorizeView>
-        <article class="content">
+        @if (NavigationManager.Uri.EndsWith("/"))
+        {
             @Body
-        </article>
+        }
+        else
+        {
+            <article class="app-content content">
+                @Body
+            </article>
+        }
     </main>
 </div>
 

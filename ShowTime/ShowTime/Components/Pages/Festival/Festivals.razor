@@ -6,66 +6,98 @@
 @rendermode InteractiveServer
 
 <h3>Festivals</h3>
- <AuthorizeView>
-<button class="btn btn-success mb-3" style="background-color:#0F4D0F" @onclick="ShowAddForm">
-    <i class="bi bi-plus-circle" style="font-size: 1.2rem; background-color: #0F4D0F"></i>
-</button>
+<AuthorizeView Roles="Administrator">
+    <button class="btn btn-success mb-3" @onclick="ShowAddForm">
+        <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+    </button>
 </AuthorizeView>
 
 @if (showAddForm)
 {
-    <FestivalForm OnSave="HandleSaveFestival" />
+    <div class="form-drawer show">
+        <div class="form-drawer-header">
+            <span class="form-drawer-title">Add Festival</span>
+            <button class="form-drawer-toggle" @onclick="() => showAddForm = false">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+        <FestivalForm OnSave="HandleSaveFestival" />
+    </div>
 }
 
 @if (editFestivalId != null)
 {
-    <FestivalForm FestivalId="@editFestivalId" OnSave="HandleSaveFestival" />
+    <div class="form-drawer show">
+        <div class="form-drawer-header">
+            <span class="form-drawer-title">Edit Festival</span>
+            <button class="form-drawer-toggle" @onclick="() => editFestivalId = null">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+        <FestivalForm FestivalId="@editFestivalId" OnSave="HandleSaveFestival" />
+    </div>
 }
 
-@if (festivals?.Count == 0)
+@if (festivals.Count == 0)
 {
     <p>No festivals yet.</p>
 }
 else
 {
-    <div class="row w-100 justify-content-center">
-        @foreach (var festival in festivals)
-        {
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4 d-flex align-items-stretch">
-                <div class="festival-card w-100 shadow-sm text-center border-light rounded-3 d-flex flex-column position-relative">
-                    <a href="@($"/Festivals/{festival.Id}")"
-                       style="text-decoration: none; color: inherit; flex:1;">
-                        <div class="festival-image-container">
-                            <img src="@festival.SplashArt"
-                                 alt="@festival.Name"
-                                 class="festival-image" />
-                        </div>
+    <div class="mb-3 d-flex align-items-center gap-2 genre-filter-row">
+        <label class="mb-0 filter-label">Filter by location:</label>
+        <select @bind="selectedLocation" @bind:event="onchange" class="filter-select">
+            <option value="">All Locations</option>
+            @foreach (var loc in allLocations)
+            {
+                <option value="@loc">@loc</option>
+            }
+        </select>
+    </div>
 
-                        <div class="card-body py-3">
-                            <h5 class="card-title mb-1">@festival.Name</h5>
-                            <p class="card-text text-muted mb-1">@festival.Location</p>
-                            <p class="card-text mb-0" style="font-size: 0.95rem;">
-                                @festival.StartDate.ToShortDateString() – @festival.EndDate.ToShortDateString()
-                            </p>
-                        </div>
-                    </a>
-                     <AuthorizeView>
-                    <button class="btn btn-sm festival-edit-btn"
+    <QuickGrid TGridItem="FestivalGetDto"
+               Items="FilteredFestivals"
+               Table-Classes="table table-hover quickgrid-table align-middle table-striped border shadow rounded-3"
+               Sortable="true">
+        <TemplateColumn Title="Image" Context="festival">
+            <a href="@($"/Festivals/{festival.Id}")" style="display:inline-block">
+                <img src="@festival.SplashArt"
+                     alt="@festival.Name"
+                     class="rounded-4 shadow festival-img"
+                     style="height: 200px; width:auto; object-fit: cover; background: transparent;" />
+            </a>
+        </TemplateColumn>
+
+        <PropertyColumn Property="f => f.Name" Sortable="true" Title="Name" />
+
+        <TemplateColumn Title="Location" Context="festival">
+            <span class="badge bg-info bg-opacity-75 me-1">@festival.Location</span>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Dates" Context="festival">
+            <span>@festival.StartDate.ToShortDateString() – @festival.EndDate.ToShortDateString()</span>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Actions" Context="festival">
+            <AuthorizeView Roles="Administrator">
+                <Authorized>
+                    <button class="btn btn-sm btn-outline-primary me-2" title="Edit"
                             @onclick="() => EditFestival(festival.Id)">
                         <i class="bi bi-pencil"></i>
                     </button>
-                    </AuthorizeView>
-                </div>
-            </div>
-        }
-    </div>
+                </Authorized>
+            </AuthorizeView>
+        </TemplateColumn>
 
+    </QuickGrid>
 }
 
 @code {
-    private IList<FestivalGetDto>? festivals = new List<FestivalGetDto>();
+    private IList<FestivalGetDto> festivals = new List<FestivalGetDto>();
+    private IList<string> allLocations = new List<string>();
     private bool showAddForm = false;
     private int? editFestivalId = null;
+    private string selectedLocation = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,7 +107,13 @@ else
     private async Task LoadFestivals()
     {
         festivals = await FestivalService.GetAllFestivalsAsync();
+        allLocations = festivals.Select(f => f.Location).Where(l => !string.IsNullOrWhiteSpace(l)).Distinct().ToList();
     }
+
+    private IQueryable<FestivalGetDto> FilteredFestivals =>
+        string.IsNullOrEmpty(selectedLocation)
+            ? festivals.AsQueryable()
+            : festivals.Where(f => f.Location == selectedLocation).AsQueryable();
 
     private void ShowAddForm()
     {
@@ -109,4 +147,3 @@ else
         StateHasChanged();
     }
 }
-

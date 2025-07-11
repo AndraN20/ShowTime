@@ -1,14 +1,30 @@
 ﻿.profile-card {
-    max-width: 550px;
+    max-width: 700px;
     margin: 2.5rem auto;
-    padding: 2.5rem 2rem;
-    background: #fff;
-    border-radius: 18px;
+    padding: 2.5rem 2rem 2rem 2rem;
+    background: rgba(255,255,255,0.85); 
+    border-radius: 24px;
     box-shadow: 0 6px 32px rgba(0,0,0,0.09);
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
+    align-items: center;
+    position: relative;
 }
+
+.profile-users-table {
+    background: transparent !important;
+}
+
+    .profile-users-table th,
+    .profile-users-table td {
+        background: transparent !important;
+    }
+
+.list-group-item {
+    background: transparent !important;
+    border: 1px solid #d2e3d2; 
+}
+
 
 .profile-info div {
     font-size: 1.1rem;
@@ -23,17 +39,6 @@
     background: #fff;
 }
 
-    .profile-users-table th, .profile-users-table td {
-        vertical-align: middle;
-        font-size: 1rem;
-    }
-
-    .profile-users-table th {
-        background: #f7f8fa;
-        color: #444;
-        font-weight: 600;
-        border-bottom: 2px solid #d3d6de;
-    }
 
     .profile-users-table tr:hover {
         background: #f2fbf3 !important;
@@ -45,3 +50,8 @@
         padding: 1.2rem 0.4rem;
     }
 }
+
+.profile-card[b-r9hkeng5ps] {
+    background: rgba(255,255,255,0.50);
+}
+

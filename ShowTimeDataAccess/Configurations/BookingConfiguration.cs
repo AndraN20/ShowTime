@@ -10,7 +10,13 @@ namespace ShowTime.DataAccess.Configurations
         {
             builder.ToTable("Bookings");
 
-            builder.HasKey(l => new { l.FestivalId, l.UserId });
+            builder.HasKey(l => new { l.FestivalId, l.UserId, l.TicketId });
+
+            builder.HasOne(b => b.Ticket)
+                    .WithMany(t => t.Bookings)
+                    .HasForeignKey(b => b.TicketId)
+                    .OnDelete(DeleteBehavior.Restrict); ;
+
 
         }
     }

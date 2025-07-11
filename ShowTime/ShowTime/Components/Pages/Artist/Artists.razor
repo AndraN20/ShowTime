@@ -3,84 +3,103 @@
 @using ShowTime.BusinessLogic.DTOs
 @using ShowTime.BusinessLogic.DTOs.Artist
 @inject IArtistService ArtistService
-@inject IGenreService GenreService
-@using ShowTime.BusinessLogic.DTOs.Genre
 @using ShowTime.Components.Shared
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
-
 <h3>Artists</h3>
- <AuthorizeView >
-<button class="btn btn-success mb-3" @onclick="ShowAddForm">
-    <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
-</button>
- </AuthorizeView>
+<AuthorizeView Roles="Administrator">
+    <button class="btn btn-success mb-3" @onclick="ShowAddForm">
+        <i class="bi bi-plus-circle" style="font-size: 1.2rem;"></i>
+    </button>
+</AuthorizeView>
 
 @if (showAddForm)
 {
-    <ArtistForm OnSave="HandleSaveArtist" />
+    <div class="form-drawer show">
+        <div class="form-drawer-header">
+            <span class="form-drawer-title">Add Artist</span>
+            <button class="form-drawer-toggle" @onclick="() => showAddForm = false">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+        <ArtistForm OnSave="HandleSaveArtist" Genres="allGenres.ToList()" />
+    </div>
 }
-
 @if (editArtistId != null)
 {
-    <ArtistForm ArtistId="@editArtistId" OnSave="HandleSaveArtist" />
+    <div class="form-drawer show">
+        <div class="form-drawer-header">
+            <span class="form-drawer-title">Edit Artist</span>
+            <button class="form-drawer-toggle" @onclick="() => editArtistId = null">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+        <ArtistForm ArtistId="@editArtistId" OnSave="HandleSaveArtist" Genres="allGenres.ToList()" />
+    </div>
 }
 
 
-@if(artists.Count == 0){
+@if (artists.Count == 0)
+{
     <p>No artists yet.</p>
 }
 else
 {
-    <div class="mb-3 d-flex align-items-center gap-2">
-        <label class="mb-0">Filter by genre:</label>
-        <select @bind="selectedGenreId" @bind:event="onchange" class="form-select w-auto">
+    <div class="mb-3 d-flex align-items-center gap-2 genre-filter-row">
+        <label class="mb-0 filter-label">Filter by genre:</label>
+        <select @bind="selectedGenre" @bind:event="onchange" class="filter-select">
             <option value="">All Genres</option>
             @foreach (var g in allGenres)
             {
-                <option value="@g.Id">@g.Name</option>
+                <option value="@g">@g</option>
             }
         </select>
     </div>
 
+
     <QuickGrid TGridItem="ArtistGetDto"
                Items="FilteredArtists"
-               Table-Classes="table table-hover align-middle table-striped border shadow rounded-3"
+               Table-Classes="table table-hover quickgrid-table align-middle table-striped border shadow rounded-3"
                Sortable="true">
         <TemplateColumn Title="Image" Context="artist">
             <a href="@($"/Artists/{artist.Id}")" style="display:inline-block">
                 <img src="@artist.Image"
-                 alt="@artist.Name"
-                 class="img-thumbnail rounded-4 shadow"
-                 style="height: 200px; width:auto; object-fit: cover; background: #f5f5f5;" />
+                     alt="@artist.Name"
+                     class="rounded-4 shadow artist-img"
+                     style="height: 200px; width:auto; object-fit: cover; background: transparent; " />
             </a>
         </TemplateColumn>
 
         <PropertyColumn Property="a => a.Name" Sortable="true" Title="Name" />
-        <TemplateColumn Title="Genres" Context="artist">
-            @foreach (var g in artist.Genres)
-            {
-                <span class="badge bg-success bg-opacity-75 me-1">@g.Name</span>
-            }
+
+        <TemplateColumn Title="Genre" Context="artist">
+            <span class="badge bg-success bg-opacity-75 me-1">@artist.Genre</span>
         </TemplateColumn>
-<TemplateColumn Title="Actions" Context="artist">
-            <button class="btn btn-sm btn-outline-primary me-2" title="Edit"
-                    @onclick="() => EditArtist(artist.Id)">
-                <i class="bi bi-pencil"></i>
-            </button>
+        <TemplateColumn Title="Actions" Context="artist">
+            <AuthorizeView Roles="Administrator">
+                <Authorized>
+                    <button class="btn btn-sm btn-outline-primary me-2" title="Edit"
+                            @onclick="() => EditArtist(artist.Id)">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" title="Delete"
+                            @onclick="() => DeleteArtist(artist.Id)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </Authorized>
+            </AuthorizeView>
         </TemplateColumn>
+
     </QuickGrid>
-
 }
-
 
 @code {
     private IList<ArtistGetDto> artists = new List<ArtistGetDto>();
-    private IList<GenreGetDto> allGenres = new List<GenreGetDto>();
+    private IList<string> allGenres = new List<string>();
     private bool showAddForm = false;
     private int? editArtistId = null;
-    private int? selectedGenreId = null;
+    private string selectedGenre = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -90,17 +109,16 @@ else
     private async Task LoadArtists()
     {
         artists = await ArtistService.GetAllArtistsAsync();
-        allGenres = await GenreService.GetAllGenresAsync();
+        allGenres = artists.Select(a => a.Genre).Where(g => !string.IsNullOrEmpty(g)).Distinct().ToList();
     }
 
-    private IQueryable<ArtistGetDto> FilteredArtists => artists
-                .Where(a =>
-           !selectedGenreId.HasValue ||
-           a.Genres.Any(g => g.Id == selectedGenreId.Value)).AsQueryable();
+    private IQueryable<ArtistGetDto> FilteredArtists =>
+        string.IsNullOrEmpty(selectedGenre)
+            ? artists.AsQueryable()
+            : artists.Where(a => a.Genre == selectedGenre).AsQueryable();
 
     private void ShowAddForm()
     {
-       
         showAddForm = true;
         editArtistId = null;
     }
@@ -119,9 +137,8 @@ else
             await ArtistService.UpdateArtistAsync(editArtistId.Value, new ArtistUpdateDto
             {
                 Name = artist.Name,
-                GenreIds = artist.GenreIds,
+                Genre = artist.Genre,
                 Image = artist.Image,
-
             });
 
         showAddForm = false;
@@ -137,5 +154,4 @@ else
         await ArtistService.DeleteArtistAsync(artistId);
         await LoadArtists();
     }
-
 }

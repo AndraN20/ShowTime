@@ -4,7 +4,7 @@
     {
         public int FestivalId { get; set; }
         public int UserId { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public int TicketId { get; set; }
         public int Quantity { get; set; }
     }
 }

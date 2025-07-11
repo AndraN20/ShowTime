@@ -1,0 +1,337 @@
+From 02753ada796198437e227ee0d2f812ee80c8584e Mon Sep 17 00:00:00 2001
+From: Ioana Lazar <ioana.lazar@alpinagroup.com>
+Date: Wed, 9 Jul 2025 14:05:48 +0300
+Subject: [PATCH] Attempt
+
+---
+ .../Services/ArtistService.cs                 | 13 +++++----
+ .../Services/BookingService.cs                |  3 ++
+ .../Services/FestivalService.cs               |  3 ++
+ .../Services/GenreService.cs                  |  2 ++
+ .../Services/LineupService.cs                 |  5 +++-
+ .../Services/UserService.cs                   |  3 ++
+ ShowTime/ShowTime/Program.cs                  | 28 +++++++++----------
+ .../Abstractions/IBaseRepository.cs           |  1 +
+ .../Implementations/BaseRepository.cs         |  8 ++++--
+ .../Implementations/BookingRepository.cs      |  2 --
+ .../Implementations/LineupRepository.cs       |  1 -
+ 11 files changed, 42 insertions(+), 27 deletions(-)
+
+diff --git a/ShowTime.BusinessLogic/Services/ArtistService.cs b/ShowTime.BusinessLogic/Services/ArtistService.cs
+index 2ca6f3b..a016bcf 100644
+--- a/ShowTime.BusinessLogic/Services/ArtistService.cs
++++ b/ShowTime.BusinessLogic/Services/ArtistService.cs
+@@ -39,6 +39,7 @@ namespace ShowTime.BusinessLogic.Services
+                     artist.Genres.Add(g);
+ 
+                 var createdArtist = await _artistRepo.CreateAsync(artist);
++                await _artistRepo.SaveChangesAsync();
+                 return new ArtistGetDto
+                 {
+                     Id = createdArtist.Id,
+@@ -65,6 +66,7 @@ namespace ShowTime.BusinessLogic.Services
+                     throw new KeyNotFoundException($"Artist with ID {id} not found.");
+                 }
+                 await _artistRepo.DeleteAsync(id);
++                await _artistRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+@@ -156,18 +158,17 @@ namespace ShowTime.BusinessLogic.Services
+                 artist.Name = artistUpdateDto.Name ?? artist.Name;
+                 artist.Image = artistUpdateDto.Image ?? artist.Image;
+ 
+-
+-
+                 IList<Genre> existingGenres = new List<Genre>();
+                 if (artistUpdateDto.GenreIds?.Any() == true)
+                 {
+                     existingGenres = await _genreRepo.GetByIdsAsync(artistUpdateDto.GenreIds);
+                 }
++
+                 artist.Genres.Clear();
+-                foreach (var g in existingGenres)
+-                    artist.Genres.Add(g);
++                artist.Genre.AddRange(existingGenres);
+ 
+                 var updated = await _artistRepo.UpdateAsync(artist);
++                await _artistRepo.SaveChangesAsync();
+ 
+                 return new ArtistGetDto
+                 {
+@@ -175,8 +176,8 @@ namespace ShowTime.BusinessLogic.Services
+                     Name = updated.Name,
+                     Image = updated.Image,
+                     Genres = updated.Genres
+-                        .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
+-                        .ToList()
++                    .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
++                    .ToList()
+                 };
+             }
+             catch (Exception ex)
+diff --git a/ShowTime.BusinessLogic/Services/BookingService.cs b/ShowTime.BusinessLogic/Services/BookingService.cs
+index 7feaa7a..ea65a5f 100644
+--- a/ShowTime.BusinessLogic/Services/BookingService.cs
++++ b/ShowTime.BusinessLogic/Services/BookingService.cs
+@@ -33,6 +33,7 @@ namespace ShowTime.BusinessLogic.Services
+                 };
+ 
+                 var created = await _bookingRepo.CreateAsync(booking);
++                await _bookingRepo.SaveChangesAsync();
+ 
+                 return new BookingGetDto
+                 {
+@@ -74,6 +75,7 @@ namespace ShowTime.BusinessLogic.Services
+             try
+             {
+                 await _bookingRepo.DeleteAsync(festivalId, userId);
++                await _bookingRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+@@ -96,6 +98,7 @@ namespace ShowTime.BusinessLogic.Services
+                 booking.Price = unitPrice * newQuantity;
+ 
+                 var updated = await _bookingRepo.UpdateAsync(booking);
++                await _bookingRepo.SaveChangesAsync();
+ 
+                 return new BookingGetDto
+                 {
+diff --git a/ShowTime.BusinessLogic/Services/FestivalService.cs b/ShowTime.BusinessLogic/Services/FestivalService.cs
+index 3da6043..6dc4c7e 100644
+--- a/ShowTime.BusinessLogic/Services/FestivalService.cs
++++ b/ShowTime.BusinessLogic/Services/FestivalService.cs
+@@ -72,6 +72,7 @@ namespace ShowTime.BusinessLogic.Services
+                 SplashArt = festivalCreateDto.SplashArt,
+             };
+             var createdFestival = await _festivalRepo.CreateAsync(festival);
++            await _festivalRepo.SaveChangesAsync();
+             return new FestivalGetDto
+             {
+                 Name = createdFestival.Name,
+@@ -96,6 +97,7 @@ namespace ShowTime.BusinessLogic.Services
+                 festival.EndDate = festivalUpdateDto.EndDate ?? festival.EndDate;
+                 festival.SplashArt = festivalUpdateDto.SplashArt ?? festival.SplashArt;
+                 await _festivalRepo.UpdateAsync(festival);
++                await _festivalRepo.SaveChangesAsync();
+                 return new FestivalGetDto
+                 {
+                     Name = festival.Name,
+@@ -123,6 +125,7 @@ namespace ShowTime.BusinessLogic.Services
+                     throw new KeyNotFoundException($"Festival with ID {id} not found.");
+                 }
+                 await _festivalRepo.DeleteAsync(id);
++                await _festivalRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+diff --git a/ShowTime.BusinessLogic/Services/GenreService.cs b/ShowTime.BusinessLogic/Services/GenreService.cs
+index 024d767..c66b14c 100644
+--- a/ShowTime.BusinessLogic/Services/GenreService.cs
++++ b/ShowTime.BusinessLogic/Services/GenreService.cs
+@@ -21,6 +21,7 @@ namespace ShowTime.BusinessLogic.Services
+                     Name = genreName,
+                 };
+                 var createdGenre = await _genreRepo.CreateAsync(genre);
++                await _genreRepo.SaveChangesAsync();
+                 return new GenreGetDto
+                 {
+                     Id = createdGenre.Id,
+@@ -45,6 +46,7 @@ namespace ShowTime.BusinessLogic.Services
+                     throw new KeyNotFoundException($"Genre with ID {id} not found.");
+                 }
+                 await _genreRepo.DeleteAsync(id);
++                await _genreRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+diff --git a/ShowTime.BusinessLogic/Services/LineupService.cs b/ShowTime.BusinessLogic/Services/LineupService.cs
+index a9fdf16..4694200 100644
+--- a/ShowTime.BusinessLogic/Services/LineupService.cs
++++ b/ShowTime.BusinessLogic/Services/LineupService.cs
+@@ -32,6 +32,7 @@ namespace ShowTime.BusinessLogic.Services
+                 };
+ 
+                 var created = await _lineupRepo.CreateAsync(entity);
++                await _lineupRepo.SaveChangesAsync();
+ 
+                 return new LineupDto
+                 {
+@@ -51,7 +52,8 @@ namespace ShowTime.BusinessLogic.Services
+         {
+             try
+             {
+-                await _lineupRepo.DeleteAsync(festivalId, artistId);
++                await _lineupRepo.DeleteAsync(festivalId, artistId)
++                await _lineupRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+@@ -92,6 +94,7 @@ namespace ShowTime.BusinessLogic.Services
+             entity.StartTime = dto.StartTime;
+ 
+             var updated = await _lineupRepo.UpdateAsync(entity);
++            await _lineupRepo.SaveChangesAsync();
+ 
+             return new LineupDto
+             {
+diff --git a/ShowTime.BusinessLogic/Services/UserService.cs b/ShowTime.BusinessLogic/Services/UserService.cs
+index 3704552..4d4ee3f 100644
+--- a/ShowTime.BusinessLogic/Services/UserService.cs
++++ b/ShowTime.BusinessLogic/Services/UserService.cs
+@@ -29,6 +29,7 @@ namespace ShowTime.BusinessLogic.Services
+                 user.Password = _passwordHasher.HashPassword(user, dto.Password);
+ 
+                 var created = await _userRepo.CreateAsync(user);
++                await _userRepo.SaveChangesAsync();
+ 
+                 return new UserGetDto
+                 {
+@@ -120,6 +121,7 @@ namespace ShowTime.BusinessLogic.Services
+                 }
+ 
+                 var updated = await _userRepo.UpdateAsync(user);
++                await _userRepo.SaveChangesAsync();
+ 
+                 return new UserGetDto
+                 {
+@@ -141,6 +143,7 @@ namespace ShowTime.BusinessLogic.Services
+                 var user = await _userRepo.GetByIdAsync(id)
+                     ?? throw new KeyNotFoundException($"User with ID {id} does not exist.");
+                 await _userRepo.DeleteAsync(id);
++                await _userRepo.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+diff --git a/ShowTime/ShowTime/Program.cs b/ShowTime/ShowTime/Program.cs
+index 33d1586..5d3d5b6 100644
+--- a/ShowTime/ShowTime/Program.cs
++++ b/ShowTime/ShowTime/Program.cs
+@@ -15,28 +15,28 @@ var builder = WebApplication.CreateBuilder(args);
+ var connectionString = builder.Configuration.GetConnectionString("ShowTimeContext");
+ 
+ builder.Services.AddDbContext<ShowTimeDbContext>(options =>
+-    options.UseSqlServer(connectionString),ServiceLifetime.Scoped);
++    options.UseSqlServer(connectionString));
+ 
+ 
+ builder.Services.AddTransient<ILineupService, LineupService>();
+-builder.Services.AddScoped<IArtistService, ArtistService>();
++builder.Services.AddTransient<IArtistService, ArtistService>();
+ builder.Services.AddTransient<IFestivalService, FestivalService>();
+ builder.Services.AddTransient<IUserService, UserService>();
+ builder.Services.AddTransient<IGenreService, GenreService>();
+ builder.Services.AddTransient<IBookingService, BookingService>();
+ 
+-builder.Services.AddScoped<IRepository<Festival>, FestivalRepository>();
+-builder.Services.AddScoped<IFestivalRepository, FestivalRepository>();
+-builder.Services.AddScoped<IRepository<Artist>, ArtistRepository>();
+-builder.Services.AddScoped<IArtistRepository, ArtistRepository>();
+-builder.Services.AddScoped<IRepository<Lineup>, LineupRepository>();
+-builder.Services.AddScoped<ILineupRepository, LineupRepository>();
+-builder.Services.AddScoped<IRepository<User>, BaseRepository<User>>();
+-builder.Services.AddScoped<IUserRepository, UserRepository>();
+-builder.Services.AddScoped<IRepository<Genre>, GenreRepository>();
+-builder.Services.AddScoped<IGenreRepository, GenreRepository>();
+-builder.Services.AddScoped<IBookingRepository, BookingRepository>();
+-builder.Services.AddScoped<IRepository<Booking>, BookingRepository>();
++builder.Services.AddTransient<IRepository<Festival>, FestivalRepository>();
++builder.Services.AddTransient<IFestivalRepository, FestivalRepository>();
++builder.Services.AddTransient<IRepository<Artist>, ArtistRepository>();
++builder.Services.AddTransient<IArtistRepository, ArtistRepository>();
++builder.Services.AddTransient<IRepository<Lineup>, LineupRepository>();
++builder.Services.AddTransient<ILineupRepository, LineupRepository>();
++builder.Services.AddTransient<IRepository<User>, BaseRepository<User>>();
++builder.Services.AddTransient<IUserRepository, UserRepository>();
++builder.Services.AddTransient<IRepository<Genre>, GenreRepository>();
++builder.Services.AddTransient<IGenreRepository, GenreRepository>();
++builder.Services.AddTransient<IBookingRepository, BookingRepository>();
++builder.Services.AddTransient<IRepository<Booking>, BookingRepository>();
+ 
+ 
+ builder.Services.AddRazorComponents()
+diff --git a/ShowTimeDataAccess/Repositories/Abstractions/IBaseRepository.cs b/ShowTimeDataAccess/Repositories/Abstractions/IBaseRepository.cs
+index 0ba02ba..eeb8566 100644
+--- a/ShowTimeDataAccess/Repositories/Abstractions/IBaseRepository.cs
++++ b/ShowTimeDataAccess/Repositories/Abstractions/IBaseRepository.cs
+@@ -7,5 +7,6 @@
+         Task<TEntity> CreateAsync(TEntity entity);
+         Task<TEntity> UpdateAsync(TEntity entity);
+         Task DeleteAsync(int id);
++        Task SaveChangesAsync();
+     }
+ }
+diff --git a/ShowTimeDataAccess/Repositories/Implementations/BaseRepository.cs b/ShowTimeDataAccess/Repositories/Implementations/BaseRepository.cs
+index 1208794..4659cca 100644
+--- a/ShowTimeDataAccess/Repositories/Implementations/BaseRepository.cs
++++ b/ShowTimeDataAccess/Repositories/Implementations/BaseRepository.cs
+@@ -19,7 +19,6 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+             try
+             {
+                 _context.Set<TEntity>().Add(entity);
+-                await _context.SaveChangesAsync();
+                 return entity;
+             }
+             catch (Exception ex)
+@@ -38,7 +37,6 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+                     throw new KeyNotFoundException($"Entity with ID {id} not found.");
+                 }
+                 _context.Set<TEntity>().Remove(entity);
+-                await _context.SaveChangesAsync();
+             }
+             catch (Exception ex)
+             {
+@@ -75,7 +73,6 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+             try
+             {
+                 _context.Set<TEntity>().Update(entity);
+-                await _context.SaveChangesAsync();
+                 return entity;
+             }
+             catch (Exception ex)
+@@ -83,5 +80,10 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+                 throw new Exception($"Error updating entity: {ex.Message}", ex);
+             }
+         }
++
++        public async Task SaveChangesAsync()
++        {
++            await _context.SaveChangesAsync();
++        }
+     }
+ }
+diff --git a/ShowTimeDataAccess/Repositories/Implementations/BookingRepository.cs b/ShowTimeDataAccess/Repositories/Implementations/BookingRepository.cs
+index 9e82927..c548c38 100644
+--- a/ShowTimeDataAccess/Repositories/Implementations/BookingRepository.cs
++++ b/ShowTimeDataAccess/Repositories/Implementations/BookingRepository.cs
+@@ -32,14 +32,12 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+             if (booking != null)
+             {
+                 _context.Bookings.Remove(booking);
+-                await _context.SaveChangesAsync();
+             }
+         }
+ 
+         public override async Task<Booking> UpdateAsync(Booking booking)
+         {
+             _context.Bookings.Update(booking);
+-            await _context.SaveChangesAsync();
+             return booking;
+         }
+ 
+diff --git a/ShowTimeDataAccess/Repositories/Implementations/LineupRepository.cs b/ShowTimeDataAccess/Repositories/Implementations/LineupRepository.cs
+index 138d56a..df5e869 100644
+--- a/ShowTimeDataAccess/Repositories/Implementations/LineupRepository.cs
++++ b/ShowTimeDataAccess/Repositories/Implementations/LineupRepository.cs
+@@ -31,7 +31,6 @@ namespace ShowTime.DataAccess.Repositories.Implementations
+                 throw new KeyNotFoundException("Lineup not found");
+ 
+             _context.Lineups.Remove(entity);
+-            await _context.SaveChangesAsync();
+         }
+ 
+ 
+-- 
+2.36.0.windows.1
+

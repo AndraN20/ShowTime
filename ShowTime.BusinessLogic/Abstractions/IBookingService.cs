@@ -6,7 +6,9 @@ namespace ShowTime.BusinessLogic.Abstractions
     {
         Task<BookingGetDto> CreateBookingAsync(BookingCreateDto dto);
         Task<IList<BookingGetDto>> GetBookingsForUserAsync(int userId);
-        Task DeleteBookingAsync(int festivalId, int userId);
-        Task<BookingGetDto> UpdateBookingQuantityAsync(int festivalId, int userId, int newQuantity);
+        Task DeleteBookingAsync( int userId, int festivalId, int ticketId);
+        Task<BookingGetDto> UpdateBookingAsync( int userId, int festivalId, int ticketId, int quantity);
+        Task<IList<BookingGetDto>> GetAllBookingsAsync();
+
     }
 }

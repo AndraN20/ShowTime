@@ -20,30 +20,6 @@ namespace ShowTime.DataAccess.Configurations
                 .WithMany(a => a.Artists)
                 .UsingEntity<Lineup>();
 
-            builder.HasMany(a => a.Genres)
-                   .WithMany(g => g.Artists)
-                   .UsingEntity<Dictionary<string, object>>(
-                        "ArtistGenre",     
-                        right => right
-                                   .HasOne<Genre>()
-                                   .WithMany()
-                                   .HasForeignKey("GenreId"),
-                        left => left
-                                   .HasOne<Artist>()
-                                   .WithMany()
-                                   .HasForeignKey("ArtistId"),
-                        pivot =>
-                        {
-                            pivot.HasKey("ArtistId", "GenreId");
-                           
-                            pivot.HasData(
-                                new { ArtistId = 4, GenreId = 1 },  
-                                new { ArtistId = 4, GenreId = 2 },  
-                                new { ArtistId = 6, GenreId = 4 },  
-                                new { ArtistId = 12, GenreId = 1 }, 
-                                new { ArtistId = 13, GenreId = 1 }  
-                            );
-                        });
 
             builder.HasData(
                 new List<Artist>
@@ -51,22 +27,29 @@ namespace ShowTime.DataAccess.Configurations
                      new Artist { Id = 4,
                          Name = "Metro Boomin",
                          Image = "https://cdn.adh.reperio.news/image-1/1e800e06-0d90-43aa-b8a2-62abb4e3b4dc/index.jpeg?p=f%3Dpng%26w%3D1400%26r%3Dcontain",
-                         },
-                     new Artist { Id = 6,
+                         Genre = "Hip-Hop" },
+                     new Artist
+                     {
+                         Id = 6,
                          Name = "Justin Timberlake",
                          Image = "https://s-cache.s3.cloudworks.ro/kissfm/cache/1280/0/0/articole/2024/10/08/whatsapp-image-2024-10-08-at-193121_331c8603d9cdc5309b400d2527adf99a.jpeg",
-                        },
-                     new Artist {
+                         Genre = "Pop"
+                     },
+                     new Artist
+                     {
                          Id = 13,
                          Name = "Subcarpați",
                          Image = "https://timisoara2023.eu/images/8HkvQPwMOnusyl155l1FOQJu-EU=/3465/width-1600%7Cformat-webp/6c62437f-d838-42f3-9bee-8084619d1734",
-                         },
-                     new Artist {
+                         Genre = "Hip-Hop"
+                     },
+                     new Artist
+                     {
                          Id = 12,
                          Name = "Deliric x Silent Strike",
                          Image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8Kgru8ASEuswZMx_U3iE-_T_XQhU_MYGDRQ&s",
-                        }
-                });
+                         Genre = "Hip-Hop"
+                     }
+              });
         }
     }
 }

@@ -3,7 +3,6 @@
         <img src="/images/logoo.svg" alt="ShowTime Logo" height="40">
     </a>
 
-
     <ul class="navbar-nav ms-auto">
         <li class="nav-item dropdown">
             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -23,6 +22,11 @@
                 <li>
                     <NavLink class="dropdown-item" href="/profile">Profile</NavLink>
                 </li>
+                <AuthorizeView Roles="Administrator">
+                <li>
+                    <NavLink class="dropdown-item" href="/bookings">Bookings</NavLink>
+                </li>
+                </AuthorizeView>
             </ul>
         </li>
     </ul>

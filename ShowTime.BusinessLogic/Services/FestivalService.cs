@@ -74,6 +74,7 @@ namespace ShowTime.BusinessLogic.Services
             var createdFestival = await _festivalRepo.CreateAsync(festival);
             return new FestivalGetDto
             {
+                Id = createdFestival.Id,
                 Name = createdFestival.Name,
                 Location = createdFestival.Location,
                 SplashArt = createdFestival.SplashArt,
@@ -98,6 +99,7 @@ namespace ShowTime.BusinessLogic.Services
                 await _festivalRepo.UpdateAsync(festival);
                 return new FestivalGetDto
                 {
+                    Id = festival.Id,
                     Name = festival.Name,
                     Location = festival.Location,
                     StartDate = festival.StartDate,
@@ -137,6 +139,7 @@ namespace ShowTime.BusinessLogic.Services
                 var festivals = await _festivalRepo.GetAllByArtistAsync(id);
                 return festivals.Select(f => new FestivalGetDto
                 {
+                    Id = f.Id,
                     Name = f.Name,
                     Location = f.Location,
                     StartDate = f.StartDate,

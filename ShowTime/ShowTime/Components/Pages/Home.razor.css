@@ -28,3 +28,14 @@
         opacity: 1;
         z-index: -1;
     }
+
+body:has(.home-page)::before {
+    opacity: 1 !important;
+    background: url('/images/background.jpg') no-repeat center center fixed !important;
+}
+
+body:has(.home-page)::after {
+    display: none !important;
+}
+
+

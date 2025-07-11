@@ -14,33 +14,54 @@ namespace ShowTime.DataAccess.Repositories.Implementations
         {
             return await _context.Bookings
                 .Include(b => b.Festival)
+                .Include(b => b.Ticket)
+                .Include(b => b.User)
                 .Where(b => b.UserId == userId)
                 .ToListAsync();
         }
 
-        public async Task<Booking?> GetByIdAsync(int festivalId, int userId)
+        public async Task<IEnumerable<Booking>> GetBookingsForFestivalAsync(int festivalId)
+        {
+            return await _context.Bookings
+                .Include(b => b.User)
+                .Include(b => b.Ticket)
+                .Include(b => b.User)
+                .Where(b => b.FestivalId == festivalId)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<Booking>> GetAllBookingsAsync()
         {
             return await _context.Bookings
                 .Include(b => b.Festival)
-                .FirstOrDefaultAsync(b => b.FestivalId == festivalId && b.UserId == userId);
+                .Include(b => b.Ticket)
+                .Include(b => b.User)
+                .ToListAsync();
         }
 
-        public async Task DeleteAsync(int festivalId, int userId)
+
+        public async Task<Booking?> GetBookingAsync(int userId, int festivalId, int ticketId)
         {
-            var booking = await _context.Bookings
-                .FirstOrDefaultAsync(b => b.FestivalId == festivalId && b.UserId == userId);
+            return await _context.Bookings
+                .Include(b => b.Ticket)
+                .Include(b => b.Festival)
+                .Include(b => b.User)
+                .FirstOrDefaultAsync(b => b.UserId == userId && b.FestivalId == festivalId && b.TicketId == ticketId);
+        }
+
+        public async Task DeleteAsync(int userId, int festivalId, int ticketId)
+        {
+            var booking = await GetBookingAsync(userId, festivalId, ticketId);
             if (booking != null)
             {
                 _context.Bookings.Remove(booking);
                 await _context.SaveChangesAsync();
             }
         }
-
-        public override async Task<Booking> UpdateAsync(Booking booking)
+        public async Task<int> GetTotalBookedQuantityForTicketAsync(int ticketId)
         {
-            _context.Bookings.Update(booking);
-            await _context.SaveChangesAsync();
-            return booking;
+            return await _context.Bookings
+                .Where(b => b.TicketId == ticketId)
+                .SumAsync(b => b.Quantity);
         }
 
     }

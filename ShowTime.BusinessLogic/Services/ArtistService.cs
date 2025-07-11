@@ -1,8 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ShowTime.BusinessLogic.Abstractions;
+﻿using ShowTime.BusinessLogic.Abstractions;
 using ShowTime.BusinessLogic.DTOs.Artist;
-using ShowTime.BusinessLogic.DTOs.Genre;
-using ShowTime.DataAccess;
 using ShowTime.DataAccess.Models;
 using ShowTime.DataAccess.Repositories.Abstractions;
 
@@ -11,13 +8,10 @@ namespace ShowTime.BusinessLogic.Services
     public class ArtistService : IArtistService
     {
         private readonly IArtistRepository _artistRepo;
-        private readonly IGenreRepository _genreRepo;
 
-        public ArtistService(IArtistRepository artistRepo, IGenreRepository genreRepo)
+        public ArtistService(IArtistRepository artistRepo)
         {
             _artistRepo = artistRepo;
-            _genreRepo = genreRepo;
-
         }
 
         public async Task<ArtistGetDto> CreateArtistAsync(ArtistCreateDto artistCreateDto)
@@ -27,16 +21,9 @@ namespace ShowTime.BusinessLogic.Services
                 var artist = new Artist
                 {
                     Name = artistCreateDto.Name,
-                    Image = artistCreateDto.Image
+                    Image = artistCreateDto.Image,
+                    Genre = artistCreateDto.Genre,
                 };
-                var genres = await _genreRepo.GetByIdsAsync(artistCreateDto.GenreIds);
-                if (genres == null || !genres.Any())
-                {
-                    throw new KeyNotFoundException("No genres found for the provided IDs.");
-                }
-
-                foreach (var g in genres)
-                    artist.Genres.Add(g);
 
                 var createdArtist = await _artistRepo.CreateAsync(artist);
                 return new ArtistGetDto
@@ -44,9 +31,8 @@ namespace ShowTime.BusinessLogic.Services
                     Id = createdArtist.Id,
                     Name = createdArtist.Name,
                     Image = createdArtist.Image,
-                    Genres = createdArtist.Genres
-                       .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
-                       .ToList()
+                    Genre = createdArtist.Genre
+
                 };
             }
             catch (Exception ex)
@@ -82,10 +68,7 @@ namespace ShowTime.BusinessLogic.Services
                     Id = artist.Id,
                     Name = artist.Name,
                     Image = artist.Image,
-                    Genres = artist.Genres
-                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
-                   .ToList()
-
+                    Genre = artist.Genre
                 });
                 return artistDtos.ToList();
             }
@@ -109,9 +92,7 @@ namespace ShowTime.BusinessLogic.Services
                     Id = artist.Id,
                     Name = artist.Name,
                     Image = artist.Image,
-                    Genres = artist.Genres
-                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
-                   .ToList()
+                    Genre = artist.Genre
                 };
             }
             catch (Exception ex)
@@ -135,9 +116,7 @@ namespace ShowTime.BusinessLogic.Services
                     Id = artist.Id,
                     Name = artist.Name,
                     Image = artist.Image,
-                    Genres = artist.Genres
-                   .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
-                   .ToList()
+                    Genre = artist.Genre
                 }).ToList();
             }
             catch (Exception ex)
@@ -155,17 +134,8 @@ namespace ShowTime.BusinessLogic.Services
 
                 artist.Name = artistUpdateDto.Name ?? artist.Name;
                 artist.Image = artistUpdateDto.Image ?? artist.Image;
+                artist.Genre = artistUpdateDto.Genre ?? artist.Genre;
 
-
-
-                IList<Genre> existingGenres = new List<Genre>();
-                if (artistUpdateDto.GenreIds?.Any() == true)
-                {
-                    existingGenres = await _genreRepo.GetByIdsAsync(artistUpdateDto.GenreIds);
-                }
-                artist.Genres.Clear();
-                foreach (var g in existingGenres)
-                    artist.Genres.Add(g);
 
                 var updated = await _artistRepo.UpdateAsync(artist);
 
@@ -174,9 +144,7 @@ namespace ShowTime.BusinessLogic.Services
                     Id = updated.Id,
                     Name = updated.Name,
                     Image = updated.Image,
-                    Genres = updated.Genres
-                        .Select(g => new GenreGetDto { Id = g.Id, Name = g.Name })
-                        .ToList()
+                    Genre = updated.Genre
                 };
             }
             catch (Exception ex)

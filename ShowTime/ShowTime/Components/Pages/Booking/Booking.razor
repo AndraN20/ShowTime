@@ -1,0 +1,220 @@
+﻿@page "/bookings"
+@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Booking
+@using ShowTime.BusinessLogic.DTOs.Ticket
+@using ShowTime.BusinessLogic.DTOs.Festival
+@inject IFestivalService FestivalService
+@inject ITicketService TicketService
+@inject IBookingService BookingService
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="tickets-admin-container glassy-card">
+    <h3 class="section-title mb-4">
+        <i class="bi bi-ticket-perforated me-1 text-success"></i> Ticket Types
+    </h3>
+    <div class="mb-3">
+        <button class="btn btn-success shadow" @onclick="OpenAddTicketForm">
+            <i class="bi bi-plus-circle"></i> Add Ticket
+        </button>
+    </div>
+
+    @if (showAddTicket)
+    {
+        <div class="card add-ticket-card mb-3 border-success shadow-sm p-3 animate-drawer">
+            <div class="d-flex justify-content-between align-items-center">
+                <strong class="text-success">Adaugă Ticket Nou</strong>
+                <button class="btn btn-sm btn-outline-secondary form-drawer-toggle" @onclick="CloseAddTicketForm">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <select class="form-select filter-select" @bind="addTicketFestivalId">
+                        <option value="">-- Choose festival --</option>
+                        @foreach (var fest in allFestivals)
+                        {
+                            <option value="@fest.Id">@fest.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input class="form-control" placeholder="Ticket type" @bind="addTicketName" />
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Price" @bind="addTicketPrice" min="1" />
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Max. disponibility" @bind="addTicketMax" min="1" />
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button class="btn btn-success" @onclick="AddTicketAsync">Add</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row mb-3 align-items-end filter-row">
+        <div class="col-md-4">
+            <label class="filter-label">Filter by festival:</label>
+            <select class="form-select filter-select" @bind="filterTicketsFestivalId">
+                <option value="">-- All festivals --</option>
+                @foreach (var fest in allFestivals)
+                {
+                    <option value="@fest.Id">@fest.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (filteredTickets.Count == 0)
+    {
+        <p class="text-muted small text-center mt-2">No ticket type for selected festival.</p>
+    }
+    else
+    {
+        <div class="table-responsive mb-4">
+            <table class="table ticket-table shadow quickgrid-table">
+                <thead>
+                    <tr>
+                        <th>Ticket Name</th>
+                        <th>Festival</th>
+                        <th>Price</th>
+                        <th>Max. disponibility</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in filteredTickets)
+                    {
+                        <tr>
+                            <td><span class="badge bg-info">@ticket.Name</span></td>
+                            <td>@(allFestivals.FirstOrDefault(f => f.Id == ticket.FestivalId)?.Name ?? "-")</td>
+                            <td>@ticket.Price RON</td>
+                            <td>@ticket.MaxQuantity</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="bookings-admin-container glassy-card mt-4">
+    <h3 class="section-title mb-4">
+        <i class="bi bi-list-check me-1 text-success"></i> Bookings
+    </h3>
+    <div class="row mb-3 align-items-end filter-row">
+        <div class="col-md-4">
+            <label class="filter-label">Filter by festival:</label>
+            <select class="form-select filter-select" @bind="filterBookingsFestivalId">
+                <option value="">-- All festivals --</option>
+                @foreach (var fest in allFestivals)
+                {
+                    <option value="@fest.Id">@fest.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="filter-label">Filter by ticket type:</label>
+            <input type="text" class="form-control" @bind="filterBookingsTicketName" placeholder="Look for a certain ticket type..." />
+        </div>
+    </div>
+    @if (filteredBookings.Count == 0)
+    {
+        <p class="text-muted small text-center mt-2">No booking matches all filters.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-striped quickgrid-table">
+                <thead>
+                    <tr>
+                        <th>Festival</th>
+                        <th>User</th>
+                        <th>Ticket</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var booking in filteredBookings)
+                    {
+                        <tr>
+                            <td>@booking.FestivalName</td>
+                            <td>@booking.UserEmail</td>
+                            <td><span class="badge bg-success">@booking.TicketName</span></td>
+                            <td>@booking.Quantity</td>
+                            <td>@booking.Price RON</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<FestivalGetDto> allFestivals = new();
+    private List<TicketGetDto> allTickets = new();
+    private List<BookingGetDto> allBookings = new();
+
+    private bool showAddTicket = false;
+    private int? addTicketFestivalId = null;
+    private string addTicketName = string.Empty;
+    private int addTicketPrice = 1;
+    private int addTicketMax = 1;
+
+    private int? filterTicketsFestivalId = null;
+    private int? filterBookingsFestivalId = null;
+    private string filterBookingsTicketName = string.Empty;
+
+    private List<TicketGetDto> filteredTickets => allTickets
+        .Where(t => !filterTicketsFestivalId.HasValue || t.FestivalId == filterTicketsFestivalId.Value)
+        .ToList();
+
+    private List<BookingGetDto> filteredBookings => allBookings
+        .Where(b => (!filterBookingsFestivalId.HasValue || b.FestivalId == filterBookingsFestivalId.Value) &&
+                    (string.IsNullOrWhiteSpace(filterBookingsTicketName) || (b.TicketName?.Contains(filterBookingsTicketName, StringComparison.OrdinalIgnoreCase) ?? false))
+        ).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        allFestivals = (await FestivalService.GetAllFestivalsAsync()).ToList();
+        allTickets = (await TicketService.GetAllAsync()).ToList();
+        allBookings = (await BookingService.GetAllBookingsAsync()).ToList();
+    }
+
+    private void OpenAddTicketForm()
+    {
+        showAddTicket = true;
+        addTicketFestivalId = null;
+        addTicketName = string.Empty;
+        addTicketPrice = 1;
+        addTicketMax = 1;
+    }
+
+    private void CloseAddTicketForm()
+    {
+        showAddTicket = false;
+    }
+
+    private async Task AddTicketAsync()
+    {
+        if (addTicketFestivalId == null || string.IsNullOrWhiteSpace(addTicketName) || addTicketPrice < 1 || addTicketMax < 1)
+        {
+            await JS.InvokeVoidAsync("alert", "Complete all fields!");
+            return;
+        }
+
+        await TicketService.CreateAsync(new TicketCreateDto
+        {
+            FestivalId = addTicketFestivalId.Value,
+            Name = addTicketName,
+            Price = addTicketPrice,
+            MaxQuantity = addTicketMax
+        });
+        allTickets = (await TicketService.GetAllAsync()).ToList();
+        showAddTicket = false;
+        StateHasChanged();
+    }
+}

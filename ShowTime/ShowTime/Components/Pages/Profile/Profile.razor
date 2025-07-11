@@ -23,12 +23,14 @@ else if (currentUser != null)
 {
     <div class="profile-card">
         <h3 class="mb-3">Profile</h3>
-        <div class="profile-info mb-4">
+        <div class="profile-info mb-4 text-center">
             <div><b>Email:</b> @currentUser.Email</div>
             <div><b>Role:</b> @currentUser.Role.ToString()</div>
-            <button class="btn btn-outline-secondary mb-3 float-end" @onclick="Logout">
-                <i class="bi bi-box-arrow-right me-1"></i> Logout
-            </button>
+            <div class="d-flex justify-content-center mt-3">
+                <button class="btn btn-outline-secondary" @onclick="Logout">
+                    <i class="bi bi-box-arrow-right me-1"></i> Logout
+                </button>
+            </div>
         </div>
 
         <h4>My Bookings</h4>
@@ -43,12 +45,17 @@ else if (currentUser != null)
                 {
                     <li class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                         <div>
-                            <b>Festival ID: @booking.FestivalId</b> |
-                            @booking.Type x
-                            @if (editingFestivalId == booking.FestivalId && editingUserId == booking.UserId)
+                            <b>@booking.FestivalName</b>
+                            <span class="badge bg-info ms-1">@booking.TicketName</span>
+                            x
+                            @if (
+                                            editingFestivalId == booking.FestivalId
+                                            && editingUserId == booking.UserId
+                                            && editingTicketId == booking.TicketId
+                                            )
                             {
                                 <input type="number" min="1" class="form-control d-inline-block" style="width:80px;" @bind="editQuantity" />
-                                <button class="btn btn-sm btn-success ms-1" @onclick="() => SaveQuantity(booking.FestivalId, booking.UserId)">
+                                <button class="btn btn-sm btn-success ms-1" @onclick="() => SaveQuantity(booking.FestivalId, booking.UserId, booking.TicketId)">
                                     <i class="bi bi-check"></i>
                                 </button>
                                 <button class="btn btn-sm btn-secondary ms-1" @onclick="CancelEdit">
@@ -58,22 +65,23 @@ else if (currentUser != null)
                             else
                             {
                                 @booking.Quantity
+                                <AuthorizeView Roles="Administrator">
                                 <button class="btn btn-sm btn-outline-primary ms-1"
-                                        @onclick="() => StartEdit(booking.FestivalId, booking.UserId, booking.Quantity)">
+                                        @onclick="() => StartEdit(booking.FestivalId, booking.UserId, booking.TicketId, booking.Quantity)">
                                     <i class="bi bi-pencil"></i>
                                 </button>
+                                </AuthorizeView>
                             }
                             , total: <b>@booking.Price RON</b>
                         </div>
-                        <div>
+                        <div><AuthorizeView Roles="Administrator">
                             <button class="btn btn-sm btn-outline-danger"
-                                    @onclick="() => DeleteBooking(booking.FestivalId, booking.UserId)">
+                                    @onclick="() => DeleteBooking(booking.FestivalId, booking.UserId, booking.TicketId)">
                                 <i class="bi bi-trash"></i>
-                            </button>
+                            </button></AuthorizeView>
                         </div>
                     </li>
                 }
-
             </ul>
         }
 
@@ -124,6 +132,7 @@ else
 
     private int editingFestivalId = 0;
     private int editingUserId = 0;
+    private int editingTicketId = 0;
     private int editQuantity = 1;
 
     protected override async Task OnInitializedAsync()
@@ -148,20 +157,11 @@ else
         loading = false;
     }
 
-    private async Task DeleteBooking(int festivalId, int userId)
-    {
-        var confirm = await JS.InvokeAsync<bool>("confirm", "Delete this booking?");
-        if (!confirm) return;
-        await BookingService.DeleteBookingAsync(festivalId, userId);
-        if (currentUser != null)
-            myBookings = await BookingService.GetBookingsForUserAsync(currentUser.Id);
-        StateHasChanged();
-    }
-
-    private void StartEdit(int festivalId, int userId, int currentQuantity)
+    private void StartEdit(int festivalId, int userId, int ticketId, int currentQuantity)
     {
         editingFestivalId = festivalId;
         editingUserId = userId;
+        editingTicketId = ticketId;
         editQuantity = currentQuantity;
     }
 
@@ -169,10 +169,11 @@ else
     {
         editingFestivalId = 0;
         editingUserId = 0;
+        editingTicketId = 0;
         editQuantity = 1;
     }
 
-    private async Task SaveQuantity(int festivalId, int userId)
+    private async Task SaveQuantity(int festivalId, int userId, int ticketId)
     {
         if (editQuantity < 1)
         {
@@ -181,8 +182,12 @@ else
         }
         try
         {
-            var updated = await BookingService.UpdateBookingQuantityAsync(festivalId, userId, editQuantity);
-            var idx = myBookings.ToList().FindIndex(b => b.FestivalId == festivalId && b.UserId == userId);
+            var updated = await BookingService.UpdateBookingAsync(userId, festivalId, ticketId, editQuantity);
+            var idx = myBookings.ToList().FindIndex(b =>
+                b.FestivalId == festivalId &&
+                b.UserId == userId &&
+                b.TicketId == ticketId);
+
             if (idx >= 0)
                 myBookings[idx] = updated;
         }
@@ -190,8 +195,17 @@ else
         {
             await JS.InvokeVoidAsync("alert", ex.Message);
         }
-        editingFestivalId = 0;
-        editingUserId = 0;
+        CancelEdit();
+    }
+
+    private async Task DeleteBooking(int userId, int festivalId, int ticketId)
+    {
+        var confirm = await JS.InvokeAsync<bool>("confirm", "Delete this booking?");
+        if (!confirm) return;
+        await BookingService.DeleteBookingAsync(userId, festivalId, ticketId);
+        if (currentUser != null)
+            myBookings = await BookingService.GetBookingsForUserAsync(currentUser.Id);
+        StateHasChanged();
     }
 
     private async Task DeleteUser(int userId)

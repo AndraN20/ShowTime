@@ -1,10 +1,10 @@
-﻿@using ShowTime.BusinessLogic.DTOs.Lineup
+﻿@using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Lineup
 @using ShowTime.BusinessLogic.DTOs.Artist
-@using ShowTime.BusinessLogic.Abstractions
-@inject IArtistService ArtistService
 @inject ILineupService LineupService
 
 <EditForm Model="Lineup" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
     <div class="mb-2">
         <label>Artist</label>
         <InputSelect @bind-Value="Lineup.ArtistId" class="form-control" required>
@@ -15,56 +15,51 @@
             }
         </InputSelect>
     </div>
-
     <div class="mb-2">
         <label>Stage</label>
-        <InputText @bind-Value="Lineup.Stage" class="form-control" required />
+        <InputSelect @bind-Value="selectedStage" class="form-control" required>
+            <option value="">Select stage</option>
+            @foreach (var stage in Stages.Distinct())
+            {
+                <option value="@stage">@stage</option>
+            }
+            <option value="new"> Add new stage </option>
+        </InputSelect>
+        @if (selectedStage == "new")
+        {
+            <input class="form-control mt-2" placeholder="New stage name" @bind="newStage" required />
+        }
     </div>
-
-   <div class="mb-2">
-    <label>Start Time</label>
-        <label>Date</label>
-        <input type="date" @bind="DatePart" class="form-control" required />
-        
-   </div>
-
-
-    <button class="btn btn-primary me-2" style="background-color: #0F4D0F" type="submit">
-        @(IsEdit ? "Save Changes" : "Add to Lineup")
-    </button>
-    @if (OnCancel.HasDelegate)
-    {
-        <button class="btn btn-secondary" type="button" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
-    }
+    <div class="mb-2">
+        <label>Date & Time</label>
+        <InputDate Type="InputDateType.DateTimeLocal" @bind-Value="Lineup.StartTime" class="form-control" required />
+    </div>
+    <div class="mb-3 d-flex gap-2">
+        <button class="btn btn-primary me-2" type="submit">
+            @(ArtistId == null ? "Add to Lineup" : "Save Changes")
+        </button>
+        @if (OnCancel.HasDelegate)
+        {
+            <button class="btn btn-secondary" type="button" @onclick="() => OnCancel.InvokeAsync()">Cancel</button>
+        }
+    </div>
 </EditForm>
 
 @code {
     [Parameter] public int FestivalId { get; set; }
     [Parameter] public int? ArtistId { get; set; }
+    [Parameter] public IList<ArtistGetDto> Artists { get; set; } = new List<ArtistGetDto>();
+    [Parameter] public IList<string> Stages { get; set; } = new List<string>();
     [Parameter] public EventCallback<LineupDto> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
     private LineupDto Lineup = new();
-    private List<ArtistGetDto> Artists = new();
-    private bool IsEdit => ArtistId.HasValue;
-
-    private DateTime DatePart
-    {
-        get => Lineup.StartTime.Date;
-        set => Lineup.StartTime = value.Date.Add(Lineup.StartTime.TimeOfDay);
-    }
-
-    private TimeSpan TimePart
-    {
-        get => Lineup.StartTime.TimeOfDay;
-        set => Lineup.StartTime = Lineup.StartTime.Date.Add(value);
-    }
+    private string selectedStage = "";
+    private string newStage = "";
 
     protected override async Task OnInitializedAsync()
     {
-        Artists = (await ArtistService.GetAllArtistsAsync()).ToList();
-
-        if (IsEdit && ArtistId.HasValue)
+        if (ArtistId.HasValue)
         {
             var lineup = await LineupService.GetAsync(FestivalId, ArtistId.Value);
             if (lineup != null)
@@ -80,12 +75,25 @@
         }
         else
         {
-            Lineup = new LineupDto { FestivalId = FestivalId, StartTime = DateTime.Today };
+            Lineup = new LineupDto { FestivalId = FestivalId, StartTime = DateTime.Today.AddHours(18) };
+        }
+        if (!string.IsNullOrWhiteSpace(Lineup.Stage) && Stages.Contains(Lineup.Stage))
+        {
+            selectedStage = Lineup.Stage;
+        }
+        else if (!string.IsNullOrWhiteSpace(Lineup.Stage))
+        {
+            selectedStage = "new";
+            newStage = Lineup.Stage;
         }
     }
 
     private async Task HandleValidSubmit()
     {
+        Lineup.FestivalId = FestivalId;
+        if (selectedStage == "new" && string.IsNullOrWhiteSpace(newStage))
+            return;
+        Lineup.Stage = selectedStage == "new" ? newStage.Trim() : selectedStage;
         await OnSave.InvokeAsync(Lineup);
     }
 }

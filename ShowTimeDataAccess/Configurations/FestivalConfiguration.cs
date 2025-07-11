@@ -24,6 +24,7 @@ namespace ShowTime.DataAccess.Configurations
                 .WithMany(u => u.Festivals)
                 .UsingEntity<Lineup>();
 
+
             builder.HasData(new List<Festival>
             {
                 new Festival

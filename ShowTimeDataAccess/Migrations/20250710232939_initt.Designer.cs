@@ -12,8 +12,8 @@ using ShowTime.DataAccess;
 namespace ShowTime.DataAccess.Migrations
 {
     [DbContext(typeof(ShowTimeDbContext))]
-    [Migration("20250630122715_changed-photo")]
-    partial class changedphoto
+    [Migration("20250710232939_initt")]
+    partial class initt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,29 +54,29 @@ namespace ShowTime.DataAccess.Migrations
                         new
                         {
                             Id = 4,
-                            Genre = "Hip-Hop/Trap",
+                            Genre = "Hip-Hop",
                             Image = "https://cdn.adh.reperio.news/image-1/1e800e06-0d90-43aa-b8a2-62abb4e3b4dc/index.jpeg?p=f%3Dpng%26w%3D1400%26r%3Dcontain",
                             Name = "Metro Boomin"
                         },
                         new
                         {
                             Id = 6,
-                            Genre = "Pop/R&B",
-                            Image = "https://electriccastle-assets.s3.amazonaws.com/justin_timberlake.png",
+                            Genre = "Pop",
+                            Image = "https://s-cache.s3.cloudworks.ro/kissfm/cache/1280/0/0/articole/2024/10/08/whatsapp-image-2024-10-08-at-193121_331c8603d9cdc5309b400d2527adf99a.jpeg",
                             Name = "Justin Timberlake"
                         },
                         new
                         {
                             Id = 13,
-                            Genre = "Etno/Alternative/Hip-Hop",
-                            Image = "https://subcarpati.com/img/logo.jpg",
+                            Genre = "Hip-Hop",
+                            Image = "https://timisoara2023.eu/images/8HkvQPwMOnusyl155l1FOQJu-EU=/3465/width-1600%7Cformat-webp/6c62437f-d838-42f3-9bee-8084619d1734",
                             Name = "Subcarpați"
                         },
                         new
                         {
                             Id = 12,
-                            Genre = "Hip-Hop/Electronic",
-                            Image = "https://codru-festival.com/img/deliricsilentstrike.png",
+                            Genre = "Hip-Hop",
+                            Image = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8Kgru8ASEuswZMx_U3iE-_T_XQhU_MYGDRQ&s",
                             Name = "Deliric x Silent Strike"
                         });
                 });
@@ -89,14 +89,18 @@ namespace ShowTime.DataAccess.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
+                    b.Property<int>("TicketId")
+                        .HasColumnType("int");
+
                     b.Property<int>("Price")
                         .HasColumnType("int");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
 
-                    b.HasKey("FestivalId", "UserId");
+                    b.HasKey("FestivalId", "UserId", "TicketId");
+
+                    b.HasIndex("TicketId");
 
                     b.HasIndex("UserId");
 
@@ -193,6 +197,35 @@ namespace ShowTime.DataAccess.Migrations
                     b.ToTable("Lineups", (string)null);
                 });
 
+            modelBuilder.Entity("ShowTime.DataAccess.Models.Ticket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FestivalId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Price")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FestivalId");
+
+                    b.ToTable("Tickets", (string)null);
+                });
+
             modelBuilder.Entity("ShowTime.DataAccess.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -227,6 +260,12 @@ namespace ShowTime.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ShowTime.DataAccess.Models.Ticket", "Ticket")
+                        .WithMany("Bookings")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ShowTime.DataAccess.Models.User", "User")
                         .WithMany("Bookings")
                         .HasForeignKey("UserId")
@@ -234,6 +273,8 @@ namespace ShowTime.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("Festival");
+
+                    b.Navigation("Ticket");
 
                     b.Navigation("User");
                 });
@@ -257,6 +298,17 @@ namespace ShowTime.DataAccess.Migrations
                     b.Navigation("Festival");
                 });
 
+            modelBuilder.Entity("ShowTime.DataAccess.Models.Ticket", b =>
+                {
+                    b.HasOne("ShowTime.DataAccess.Models.Festival", "Festival")
+                        .WithMany("Tickets")
+                        .HasForeignKey("FestivalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Festival");
+                });
+
             modelBuilder.Entity("ShowTime.DataAccess.Models.Artist", b =>
                 {
                     b.Navigation("Lineups");
@@ -267,6 +319,13 @@ namespace ShowTime.DataAccess.Migrations
                     b.Navigation("Bookings");
 
                     b.Navigation("Lineups");
+
+                    b.Navigation("Tickets");
+                });
+
+            modelBuilder.Entity("ShowTime.DataAccess.Models.Ticket", b =>
+                {
+                    b.Navigation("Bookings");
                 });
 
             modelBuilder.Entity("ShowTime.DataAccess.Models.User", b =>

@@ -1,5 +1,4 @@
 ﻿using ShowTime.BusinessLogic.DTOs.Artist;
-using ShowTime.BusinessLogic.DTOs.Festival;
 
 namespace ShowTime.BusinessLogic.Abstractions
 {

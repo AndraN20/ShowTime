@@ -1,16 +1,22 @@
 ﻿@page "/Festivals/{Id:int}"
+@using ShowTime.Components.Shared
 @using ShowTime.BusinessLogic.Abstractions
+@using ShowTime.BusinessLogic.DTOs.Artist
 @using ShowTime.BusinessLogic.DTOs.Festival
 @using ShowTime.BusinessLogic.DTOs.Lineup
 @using ShowTime.BusinessLogic.DTOs.Booking
+@using ShowTime.BusinessLogic.DTOs.Ticket
 @using ShowTime.BusinessLogic.DTOs.User
 @inject IFestivalService FestivalService
 @inject ILineupService LineupService
 @inject IBookingService BookingService
 @inject IUserService UserService
+@inject ITicketService TicketService
+@inject IArtistService ArtistService
 @inject AuthenticationStateProvider AuthProvider
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <div class="festival-details-container position-relative">
     <img src="@festival?.SplashArt" alt="Festival" class="festival-details-image mb-3" />
@@ -36,10 +42,13 @@
             <h5>Buy Tickets</h5>
             <EditForm Model="@bookingModel" OnValidSubmit="BookTickets" FormName="BuyTicketsForm">
                 <div class="mb-2">
-                    <label>Type:</label>
-                    <InputSelect class="form-select" @bind-Value="bookingModel.Type">
-                        <option value="Regular">Regular</option>
-                        <option value="VIP">VIP</option>
+                    <label>Ticket type:</label>
+                    <InputSelect class="form-select" @bind-Value="bookingModel.TicketId">
+                        <option value="">Select ticket type</option>
+                        @foreach (var ticket in tickets)
+                        {
+                            <option value="@ticket.Id">@ticket.Name (@ticket.Price RON)</option>
+                        }
                     </InputSelect>
                 </div>
                 <div class="mb-2">
@@ -58,50 +67,68 @@
             }
         </div>
     }
+</div>
+<AuthorizeView Roles="Administrator">
+    <Authorized>
+        <button class="btn btn-success mb-3" @onclick="ShowAddLineupForm">
+            <i class="bi bi-plus-circle"></i> Add Lineup
+        </button>
+        @if (showLineupForm)
+        {
+            <LineupForm FestivalId="@festival!.Id"
+                        Artists="allArtists"
+                        Stages="stages"
+                        OnSave="HandleAddLineup"
+                        OnCancel="HideLineupForm" />
+        }
+    </Authorized>
+</AuthorizeView>
 
-    <div class="festival-details-artists w-100">
-        <h4 class="mt-4 mb-3">Performing Artists</h4>
-        @if (lineups.Count == 0)
-        {
-            <p>No artists scheduled yet.</p>
-        }
-        else
-        {
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>Artist</th>
-                        <th>Stage</th>
-                        <th>Time</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var lineup in lineups.OrderBy(l => l.StartTime))
-                    {
-                        <tr>
-                            <td>@lineup.ArtistName</td>
-                            <td>@lineup.Stage</td>
-                            <td>@lineup.StartTime.ToString(@"hh\:mm")</td>
-                            <td>
-                                <!-- Poți adăuga aici butoane de edit/delete pentru lineup dacă vrei -->
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-    </div>
+<div class="festival-details-artists w-100 d-flex justify-content-center">
+    @if (lineups.Count == 0)
+    {
+        <p>No artists scheduled yet.</p>
+    }
+    else
+    {
+        <QuickGrid TGridItem="LineupGetDto"
+                   Items="lineups.AsQueryable()"
+                   Table-Classes="table table-hover quickgrid-table align-middle table-striped border shadow rounded-3"
+                   Sortable="true">
+            <TemplateColumn Title="Artist" Context="lineup">
+                <img src="@lineup.ArtistImage"
+                     alt="@lineup.ArtistName"
+                     style="height:36px;width:36px;object-fit:cover;border-radius:50%;margin-right:10px" />
+                <span>@lineup.ArtistName</span>
+            </TemplateColumn>
+            <PropertyColumn Property="l => l.Stage" Title="Stage" Sortable="true" />
+            <TemplateColumn Title="Date/Time" Context="lineup">
+                @lineup.StartTime.ToString("dd/MM/yyyy HH:mm")
+            </TemplateColumn>
+            <TemplateColumn Title="Actions" Context="lineup">
+                <AuthorizeView Roles="Administrator">
+                    <Authorized>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteLineup(lineup.FestivalId, lineup.ArtistId)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </Authorized>
+                </AuthorizeView>
+            </TemplateColumn>
+        </QuickGrid>
+    }
 </div>
 
 @code {
     [Parameter] public int Id { get; set; }
 
+    private bool showLineupForm = false;
+    private IList<ArtistGetDto> allArtists = new List<ArtistGetDto>();
     private FestivalGetDto? festival;
     private IList<LineupGetDto> lineups = new List<LineupGetDto>();
+    private IList<string> stages = new List<string>();
+    private IList<TicketGetDto> tickets = new List<TicketGetDto>();
 
-    // Booking
-    private BookingCreateDto bookingModel = new() { Type = "Regular", Quantity = 1 };
+    private BookingCreateDto bookingModel = new();
     private string? successMsg, errorMsg;
     private UserGetDto? currentUser;
 
@@ -109,7 +136,9 @@
     {
         festival = await FestivalService.GetFestivalByIdAsync(Id);
         lineups = await LineupService.GetLineupsForFestivalAsync(Id);
-
+        stages = lineups.Select(l => l.Stage).Distinct().ToList();
+        allArtists = await ArtistService.GetAllArtistsAsync();
+        tickets = await TicketService.GetTicketsForFestivalAsync(Id); 
 
         var authState = await AuthProvider.GetAuthenticationStateAsync();
         var email = authState.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value;
@@ -118,10 +147,38 @@
             currentUser = await UserService.GetUserByEmailAsync(email);
             bookingModel.FestivalId = Id;
             bookingModel.UserId = currentUser.Id;
+            bookingModel.Quantity = 1;
         }
         else
         {
             currentUser = null;
+        }
+    }
+    void ShowAddLineupForm() => showLineupForm = true;
+    void HideLineupForm() => showLineupForm = false;
+
+    private async Task DeleteLineup(int festivalId, int artistId)
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "Delete this lineup?");
+        if (!ok) return;
+
+        await LineupService.DeleteAsync(festivalId, artistId);
+        lineups = await LineupService.GetLineupsForFestivalAsync(Id);
+        StateHasChanged();
+    }
+
+    private async Task HandleAddLineup(LineupDto lineup)
+    {
+        try
+        {
+            await LineupService.CreateAsync(lineup);
+            lineups = await LineupService.GetLineupsForFestivalAsync(Id);
+            showLineupForm = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception("Error adding lineup", ex);
         }
     }
 
@@ -129,9 +186,9 @@
     {
         errorMsg = null;
         successMsg = null;
-        if (bookingModel.Quantity < 1)
+        if (bookingModel.Quantity < 1 || bookingModel.TicketId == 0)
         {
-            errorMsg = "Quantity must be at least 1.";
+            errorMsg = "Select a ticket type and quantity.";
             return;
         }
         try
